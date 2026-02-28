@@ -18,6 +18,12 @@ const CHANGELOG = [
   }
 ];
 
+const APP_URL = "https://vitalscore-dnmtc.vercel.app";
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const isAndroid = /android/i.test(navigator.userAgent);
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+
 // ─── GRADE POINT TABLE (Single Source of Truth) ───────────────────────────
 const GRADE_POINTS = { 'A':4.00,'A-':3.75,'B+':3.50,'B':3.00,'B-':2.50,'C+':2.00,'C':1.50,'D':1.00,'F':0.00 };
 
@@ -299,6 +305,20 @@ function checkVersion() {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+
+  // Hide skeleton loader and show app content after 800ms
+  setTimeout(() => {
+    const skel = document.getElementById('skeleton-loader');
+    if (skel) skel.style.display = 'none';
+    const appContent = document.getElementById('app-content');
+    if (appContent) {
+      appContent.style.display = 'block';
+      setTimeout(() => appContent.style.opacity = '1', 50);
+    }
+    // Initialize QR code safely after UI is loaded
+    generateQR();
+  }, 800);
+
   // Splash screen: fade out after 2 seconds
   setTimeout(() => {
     const splash = document.getElementById('splash');
@@ -318,6 +338,27 @@ window.addEventListener('DOMContentLoaded', () => {
   switchYear(1);
   checkVersion();
   
+  // ─── PWA INSTALL PRIORITY LOGIC ───
+  setupSmartInstallCard();
+  if (isInStandaloneMode) {
+    const banner = document.getElementById("install-banner");
+    if (banner) banner.classList.remove('visible');
+  } else {
+    // Priority 1: iPhone + Safari
+    if (isIOS && isSafari) {
+      setTimeout(() => {
+        const lastDismissed = parseInt(localStorage.getItem('nt_ios_install_dismissed') || '0');
+        if (Date.now() - lastDismissed > 3 * 24 * 60 * 60 * 1000) {
+          showIosInstallSheet();
+        }
+      }, 5000);
+    } 
+    // Priority 2: iPhone + Not Safari
+    else if (isIOS && !isSafari) {
+      document.getElementById('ios-other-banner').style.display = 'block';
+    }
+  }
+
   // Offline / Online listeners
   const offBanner = document.getElementById('offline-banner');
   const netDot    = document.getElementById('network-dot');
@@ -419,11 +460,50 @@ function selectProg(value, type) {
 }
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────
+function obNextToInstallHint() {
+  const progVal = document.getElementById('ob-prog').value;
+  if (progVal !== 'General Nursing (RGN)') return;
+
+  document.getElementById('ob-step-1').style.display = 'none';
+  document.getElementById('ob-step-install').style.display = 'block';
+
+  const hintContainer = document.getElementById('ob-install-hint-content');
+  if (isIOS && isSafari) {
+    hintContainer.innerHTML = `
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:12px;">
+        <div style="font-size:1.4rem;">□↑</div>
+        <div style="font-size:0.9rem; line-height:1.4; color:var(--text);">Tap <strong>Share</strong> at the bottom of Safari</div>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <div style="font-size:1.4rem;">📲</div>
+        <div style="font-size:0.9rem; line-height:1.4; color:var(--text);">Scroll down and tap <strong>Add to Home Screen</strong></div>
+      </div>
+    `;
+  } else if (isIOS && !isSafari) {
+    hintContainer.innerHTML = `
+      <p style="font-size:0.9rem; color:var(--text); margin:0 0 10px 0;">You are using a non-Safari browser. To install the app:</p>
+      <button class="btn btn-outline" style="width:100%;" onclick="copyAppUrlSafariPrompt()">Copy Link for Safari</button>
+    `;
+  } else {
+    hintContainer.innerHTML = `
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <div style="font-size:1.4rem;">⋮</div>
+        <div style="font-size:0.9rem; line-height:1.4; color:var(--text);">Tap the browser menu and select <strong>Add to Home Screen</strong></div>
+      </div>
+    `;
+  }
+}
+
 function saveProfile() {
   const nick = document.getElementById('ob-nick').value.trim() || 'Student';
   const prog = document.getElementById('ob-prog').value || 'General Nursing (RGN)';
   profile = { nick, prog };
   localStorage.setItem('nt_profile', JSON.stringify(profile));
+  
+  // reset onboarding steps visually for next time
+  document.getElementById('ob-step-install').style.display = 'none';
+  document.getElementById('ob-step-1').style.display = 'block';
+  
   closeModal('onboarding-modal');
   populateProfile();
   
@@ -447,8 +527,10 @@ function populateProfile() {
   selectProg(progVal, isLive ? 'live' : 'soon');
 
   // Print info
-  document.getElementById('print-name').textContent     = profile.nick;
-  document.getElementById('print-prog').textContent     = profile.prog;
+  const prName = document.getElementById('pr-name');
+  const prProg = document.getElementById('pr-prog');
+  if (prName) prName.textContent = profile.nick;
+  if (prProg) prProg.textContent = profile.prog;
 
   // Profile semester GPA summary
   const semLabels = ['Y1S1','Y1S2','Y2S1','Y2S2','Y3S1','Y3S2'];
@@ -1075,21 +1157,19 @@ function shareToWhatsApp() {
 
 // ─── FEATURE 4: PWA INSTALL PROMPT ────────────────────────────────────────
 let deferredInstallPrompt = null;
+let androidInstallTimer = null;
 
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  // Show after 30s or on 2nd visit
-  const visits = parseInt(localStorage.getItem('nt_visits') || '0') + 1;
-  localStorage.setItem('nt_visits', visits);
-  const dismissed = parseInt(localStorage.getItem('nt_install_dismissed') || '0');
-  const sevenDays = 7 * 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  if (now - dismissed > sevenDays) {
-    if (visits >= 2) {
-      showInstallBanner();
-    } else {
-      setTimeout(showInstallBanner, 30000);
+  
+  // Priority 3 Android: Delay by 15s instead of immediate show
+  if (isAndroid && !isInStandaloneMode) {
+    const dismissed = parseInt(localStorage.getItem('nt_install_dismissed') || '0');
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - dismissed > sevenDays) {
+      clearTimeout(androidInstallTimer);
+      androidInstallTimer = setTimeout(showInstallBanner, 15000);
     }
   }
 });
@@ -1136,3 +1216,128 @@ function endTutorial() {
   showToast('Welcome to Vital Score! Track your vitals. 💗', 'success');
 }
 
+// ─── IOS PWA AND QR CODE LOGIC ────────────────────────────────────────────
+function showIosInstallSheet() {
+  document.getElementById('ios-install-sheet').style.display = 'flex';
+  setTimeout(() => document.getElementById('ios-install-sheet').classList.add('visible'), 10);
+}
+
+function dismissIosInstall() {
+  document.getElementById('ios-install-sheet').style.display = 'none';
+  localStorage.setItem('nt_ios_install_dismissed', Date.now().toString());
+}
+
+function showSafariArrow() {
+  dismissIosInstall();
+  document.getElementById('safari-arrow-overlay').style.display = 'flex';
+}
+
+function hideSafariArrow() {
+  document.getElementById('safari-arrow-overlay').style.display = 'none';
+}
+
+function setupSmartInstallCard() {
+  const container = document.getElementById('profile-smart-install-card');
+  if (!container) return;
+
+  if (isInStandaloneMode) {
+    container.innerHTML = `
+      <div class="card" style="background:rgba(21,128,61,0.05); border:1px solid rgba(21,128,61,0.2);">
+        <div class="section-label" style="text-align:left; color:#15803d; margin-bottom:4px;">✅ App Installed</div>
+        <p style="font-size:0.88rem;color:var(--text);line-height:1.7;margin:0;">
+          Vital Score is installed on your device. You can use it offline anytime.
+        </p>
+      </div>`;
+    return;
+  }
+
+  if (isIOS) {
+    if (isSafari) {
+      container.innerHTML = `
+        <div class="card" style="text-align:left;">
+          <div class="section-label" style="text-align:left; margin-bottom:4px;">📲 Install on iPhone</div>
+          <p style="font-size:0.88rem;color:var(--text);line-height:1.7;margin-bottom:12px;">
+            Tap Share (<strong style="font-weight:700">□↑</strong>) at the bottom of Safari, then scroll and tap <strong>'Add to Home Screen'</strong>
+          </p>
+          <button class="btn btn-outline" style="width:100%;" onclick="showIosInstallSheet()">Step by Step Guide</button>
+        </div>`;
+    } else {
+      container.innerHTML = `
+        <div class="card" style="text-align:left;background:#fef3c7;border:1px solid #fcd34d;">
+          <div class="section-label" style="text-align:left;color:#92400e; margin-bottom:4px;">🍎 Switch to Safari to Install</div>
+          <p style="font-size:0.88rem;color:#b45309;line-height:1.7;margin-bottom:12px;">
+            Copy the link below and open it in Safari to install Vital Score on your home screen.<br>
+            <strong>${APP_URL.replace('https://','')}</strong>
+          </p>
+          <button class="btn btn-outline" style="width:100%;border-color:#d4880f;color:#b45309;" onclick="copyAppUrlSafariPrompt()">Copy Link</button>
+        </div>`;
+    }
+  } else if (isAndroid) {
+      container.innerHTML = `
+        <div class="card" style="text-align:left;">
+          <div class="section-label" style="text-align:left; margin-bottom:4px;">📲 Install on Android</div>
+          <p style="font-size:0.88rem;color:var(--text);line-height:1.7;margin:0;">
+            Tap the menu (⋮) in Chrome and select <strong>'Add to Home Screen'</strong>
+          </p>
+        </div>`;
+  }
+}
+
+function generateQR() {
+  const qrTarget = document.getElementById("qrcode");
+  if (qrTarget && typeof QRCode !== 'undefined') {
+    qrTarget.innerHTML = "";
+    new QRCode(qrTarget, {
+      text: APP_URL,
+      width: 200,
+      height: 200,
+      colorDark: "#1e3a5f",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+}
+
+function copyAppUrl() {
+  navigator.clipboard.writeText(APP_URL).then(() => {
+    showToast("Link copied! Share with your classmates 🎉");
+  });
+}
+
+function copyAppUrlSafariPrompt() {
+  navigator.clipboard.writeText(APP_URL).then(() => {
+    showToast("Link copied! Open Safari and paste it 🎉");
+  });
+}
+
+function downloadQRCode() {
+  const qrCanvas = document.querySelector('#qrcode canvas');
+  if (qrCanvas) {
+    const link = document.createElement('a');
+    link.download = 'VitalScore-QR.png';
+    link.href = qrCanvas.toDataURL();
+    link.click();
+  }
+}
+
+function printQrPoster() {
+  document.body.classList.add('printing-poster');
+  const posterCode = document.getElementById('qr-poster-code');
+  if (posterCode && typeof QRCode !== 'undefined') {
+    posterCode.innerHTML = '';
+    new QRCode(posterCode, {
+      text: APP_URL,
+      width: 300,
+      height: 300,
+      colorDark: "#1e3a5f",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+  
+  // Need slight delay to allow rendering before print dialog
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove('printing-poster');
+  }, 100);
+}

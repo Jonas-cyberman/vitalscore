@@ -796,9 +796,11 @@ h3 {
 .modal-box {
   background: var(--card);
   border-radius: var(--radius);
-  padding: 28px 24px;
-  width: 100%;
-  max-width: 380px;
+  padding: 20px 16px;
+  width: 95%;
+  max-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
   animation: slideUp 0.25s ease forwards;
@@ -808,14 +810,14 @@ h3 {
   font-weight: 800;
   text-align: center;
   color: var(--text);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .modal-sub {
   font-size: 0.82rem;
   color: var(--text-sub);
   text-align: center;
-  margin-bottom: 24px;
-  line-height: 1.5;
+  margin-bottom: 16px;
+  line-height: 1.4;
 }
 
 /* FORMS */
@@ -844,7 +846,7 @@ h3 {
   border-radius: 10px;
   background: var(--bg);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 16px;
   font-family: "Plus Jakarta Sans", sans-serif;
   transition:
     border-color 0.2s ease,
@@ -1008,7 +1010,7 @@ h3 {
 .prog-card {
   display: flex; align-items: center; justify-content: space-between;
   border: 1.5px solid var(--border); border-radius: 12px;
-  padding: 14px 16px; cursor: pointer;
+  padding: 10px 14px; cursor: pointer;
   background: var(--card);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   user-select: none;
@@ -1108,10 +1110,10 @@ h3 {
   background: #f0f4ff;
   border-left: 3px solid #1e3a5f;
   border-radius: 10px;
-  padding: 14px;
+  padding: 10px;
   margin-bottom: 12px;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.5;
   color: #1a1a2e;
 }
 [data-theme="dark"] .privacy-card {
@@ -1353,3 +1355,77 @@ h3 {
   padding: 8px; z-index: 10000; transition: top 0.2s;
 }
 .skip-link:focus { top: 0; }
+
+/* ════ SKELETON LOADER ════ */
+#skeleton-loader {
+  display: flex; flex-direction: column; gap: 16px; padding-top: 20px;
+}
+.skeleton-card {
+  height: 120px; border-radius: 16px; background: var(--card);
+  border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.skeleton-card::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 1.5s infinite;
+}
+[data-theme="light"] .skeleton-card::after {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+}
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+
+/* ════ IOS SAFARI INSTALL SHEET ════ */
+.ios-sheet-inner {
+  flex-direction: column; align-items: stretch;
+  padding: 24px 20px 30px; border-radius: 24px 24px 0 0;
+  box-shadow: 0 -10px 40px rgba(15,31,51,0.15);
+}
+.ios-sheet-handle {
+  width: 40px; height: 5px; background: #cbd5e1;
+  border-radius: 10px; margin: 0 auto 20px;
+}
+[data-theme="dark"] .ios-sheet-handle { background: #334155; }
+.ios-step-row {
+  display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;
+}
+.ios-step-icon {
+  width: 32px; height: 32px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0; color: var(--text);
+}
+.ios-step-text {
+  font-size: 0.9rem; color: var(--text); line-height: 1.4; padding-top: 4px;
+}
+.ios-result-preview {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px; margin: 10px 0 20px;
+}
+.bouncing-arrow {
+  animation: bounceArrow 1s infinite alternate cubic-bezier(0.5, 0, 0.5, 1);
+}
+@keyframes bounceArrow {
+  from { transform: translateY(0); }
+  to { transform: translateY(20px); }
+}
+
+/* ════ PRINT QR POSTER ════ */
+#qr-poster { display: none; }
+@media print {
+  /* Override default print sheet styles if printing poster */
+  body.printing-poster > *:not(#qr-poster) { display: none !important; }
+  body.printing-poster #qr-poster {
+    display: flex !important; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh; width: 100vw; text-align: center; background: #fff; color: #1e3a5f;
+    font-family: Arial, sans-serif;
+  }
+  body.printing-poster .qr-poster-content { max-width: 600px; padding: 40px; }
+  body.printing-poster .qr-poster-title { font-size: 48pt; font-weight: 900; letter-spacing: 2px; line-height: 1; margin-bottom: 10px; }
+  body.printing-poster .qr-poster-subtitle { font-size: 24pt; color: #f5a623; font-weight: 700; margin-bottom: 60px; }
+  body.printing-poster .qr-poster-code { margin: 0 auto 60px; }
+  body.printing-poster .qr-poster-code img { width: 300px !important; height: 300px !important; margin: 0 auto; display: block; }
+  body.printing-poster .qr-poster-text { font-size: 20pt; font-weight: 700; margin-bottom: 20px; }
+  body.printing-poster .qr-poster-subtext { font-size: 16pt; color: #64748b; margin-bottom: 40px; }
+  body.printing-poster .qr-poster-footer { font-size: 14pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+}
