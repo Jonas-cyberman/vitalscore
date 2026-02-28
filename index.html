@@ -3,11 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Tired of calculating your GPA manually and getting it wrong? Vital Score does it for you in seconds. Built by a DNMTC student, for DNMTC students. Free, anonymous, no index number needed.">
+  <meta name="keywords" content="DONMTC, GPA calculator, nursing school Ghana, Dunkwa nursing, SRC, Vital Score, Coleman Index, nursing GPA, midwifery GPA">
+  <meta name="author" content="Jonas Coleman, SRC PRO, DONMTC">
+  <meta name="theme-color" content="#1e3a5f">
+
+  <!-- OPEN GRAPH (WhatsApp, Facebook, iMessage) -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vitalscore-dnmtc.vercel.app/">
+  <meta property="og:site_name" content="Vital Score">
+  <meta property="og:title" content="Vital Score — Know Your GPA 🎯">
+  <meta property="og:description" content="We built this so no DNMTC student has to manually calculate their GPA ever again. Enter your grades, see your GPA instantly. Track your progress across all 3 years. Find out how close you are to First Class. Free. Anonymous. No index number. Just your grades — that's all we need. Try it 👉 vitalscore-dnmtc.vercel.app">
+  <meta property="og:image" content="https://vitalscore-dnmtc.vercel.app/preview.png">
+  <meta name="twitter:description" content="No more manual GPA calculations. Built by a DNMTC student for DNMTC students. Free & anonymous.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Vital Score">
   <title>Vital Score | The Coleman Index</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./style.css">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to Content</a>
@@ -128,13 +145,37 @@
 
 </div><!-- /print-sheet -->
 
-<!-- Toast container -->
+<!-- ═══════════════════ QR POSTER (screen:hidden) ═══════════════════ -->
+<div id="qr-poster">
+  <div class="qr-poster-content">
+    <div class="qr-poster-title">VITAL SCORE</div>
+    <div class="qr-poster-subtitle">The Coleman Index</div>
+    
+    <div id="qr-poster-code" class="qr-poster-code"></div>
+    
+    <div class="qr-poster-text">Scan to calculate your GPA instantly</div>
+    <div class="qr-poster-subtext">Official GPA System — DONMTC</div>
+    <div class="qr-poster-footer">Powered by SRC | Free & Anonymous</div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-container" class="toast-container"></div>
 
 <!-- ═══════════════════════════════ OFFLINE BANNER ═══════════════════════ -->
 <div id="offline-banner" style="display:none;background:#f5a623;color:#1e3a5f;width:100%;padding:8px;text-align:center;font-size:13px;font-weight:600;z-index:9999;position:relative;">
   📡 You're offline — Vital Score still works fully. Your data is safe.
+</div>
+
+<!-- ═══════════════════════════════ IOS OTHER BANNER ═══════════════════════ -->
+<div id="ios-other-banner" style="display:none;background:#fef3c7;color:#92400e;width:100%;padding:10px 14px;font-size:13px;font-weight:600;z-index:9998;position:relative;border-bottom:1px solid #fcd34d;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+  <div style="display:flex;align-items:flex-start;gap:10px;max-width:600px;margin:0 auto;">
+    <span style="font-size:1.2rem;line-height:1;">🍎</span>
+    <div style="flex:1;">
+      <p style="margin:0 0 6px 0;line-height:1.4;">For the best experience, open Vital Score in <strong>Safari</strong> to install it on your home screen.</p>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.75rem;width:auto;border-color:#d4880f;color:#b45309;" onclick="copyAppUrlSafariPrompt()">Copy Link</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
@@ -154,8 +195,16 @@
 <!-- ═══════════════════════════════ MAIN ════════════════════════════════ -->
 <div class="container" id="main-content" role="main">
 
-  <!-- ──────────── TAB 1: CALCULATOR ──────────── -->
-  <div id="tab-calculator" class="tab-content active">
+  <!-- ──────────── SKELETON LOADER ──────────── -->
+  <div id="skeleton-loader">
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>
+  </div>
+
+  <div id="app-content" style="display:none; opacity:0; transition: opacity 0.3s ease;">
+    <!-- ──────────── TAB 1: CALCULATOR ──────────── -->
+    <div id="tab-calculator" class="tab-content active">
 
     <div class="year-toggle">
       <button class="year-btn active" id="yr-btn-1" onclick="switchYear(1)">Year 1</button>
@@ -400,7 +449,28 @@
       style="margin-bottom:12px;">💬 Send Feedback</button>
     <button class="btn btn-danger" onclick="resetAllData()">Reset All Data</button>
 
-    <!-- About card -->
+    <!-- Smart Install Card (populated by JS) -->
+    <div id="profile-smart-install-card" style="margin-top:20px;"></div>
+
+    <!-- Share App Card -->
+    <div class="card" style="margin-top:4px; text-align:center;">
+      <div class="section-label" style="text-align:left;">📲 Share Vital Score</div>
+      <p style="font-size:0.88rem;color:var(--text);line-height:1.7;margin-bottom:12px;">
+        Scan this QR code or share the link directly
+      </p>
+      
+      <div id="qrcode" style="display:flex;justify-content:center;margin:16px 0;"></div>
+      
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn btn-whatsapp" style="flex:1;" onclick="window.open('https://wa.me/?text=Check%20out%20Vital%20Score%20%E2%80%94%20The%20Coleman%20Index.%20Calculate%20your%20GPA%20instantly.%20Free%20%26%20anonymous.%20%F0%9F%91%89%20https%3A%2F%2Fvitalscore-dnmtc.vercel.app', '_blank')">WhatsApp Share</button>
+        <button class="btn btn-outline" style="flex:1;" onclick="copyAppUrl()">Copy Link</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="printQrPoster()">🖨️ Print Poster</button>
+        <button class="btn" style="flex:1;" onclick="downloadQRCode()">Download QR</button>
+      </div>
+    </div>
+
     <!-- Privacy card -->
     <div class="card" style="position:relative;">
       <span class="privacy-safe-badge">Privacy Safe</span>
@@ -454,6 +524,7 @@
     </p>
 
   </div><!-- /tab-profile -->
+  </div><!-- /app-content -->
 
 </div><!-- /container -->
 
@@ -476,73 +547,86 @@
 <!-- ═══════════════════════ ONBOARDING MODAL ════════════════════ -->
 <div class="modal-overlay" id="onboarding-modal">
   <div class="modal-box">
-    <div class="modal-title">Welcome to Vital Score 💗</div>
-    <p class="modal-sub">The Coleman Index — Official GPA System of DNMTC</p>
-    <p style="font-size:0.85rem;color:var(--text-sub);text-align:center;margin-bottom:20px;line-height:1.6;">Built for DNMTC students, by your SRC.<br>Track your academic vitals. Know where you stand.</p>
+    <div id="ob-step-1">
+      <div class="modal-title">Welcome to Vital Score 💗</div>
+      <p class="modal-sub">The Coleman Index — Official GPA System of DNMTC</p>
+      <p style="font-size:0.8rem;color:var(--text-sub);text-align:center;margin-bottom:16px;line-height:1.5;">Built for DNMTC students, by your SRC.<br>Track your academic vitals. Know where you stand.</p>
+      <div class="form-group">
+        <label class="form-label">Nickname</label>
+        <input class="form-input" id="ob-nick" type="text"
+          placeholder="e.g. Nurse Kofi, Star Girl, Future RGN...">
+        <p class="form-hint">You don't need your real name. Pick any nickname you like.</p>
+      </div>
 
-    <div class="form-group">
-      <label class="form-label">Nickname</label>
-      <input class="form-input" id="ob-nick" type="text"
-        placeholder="e.g. Nurse Kofi, Star Girl, Future RGN...">
-      <p class="form-hint">You don't need your real name. Pick any nickname you like.</p>
-    </div>
+      <div class="form-group">
+        <label class="form-label">Select Your Programme</label>
 
-    <div class="form-group">
-      <label class="form-label">Select Your Programme</label>
-
-      <div class="prog-cards">
-        <!-- RGN -->
-        <div class="prog-card selected-live" id="pcard-rgn" onclick="selectProg('General Nursing (RGN)', 'live')">
-          <div class="prog-card-name">
-            General Nursing (RGN)
-            <small>Full curriculum available</small>
+        <div class="prog-cards">
+          <!-- RGN -->
+          <div class="prog-card selected-live" id="pcard-rgn" onclick="selectProg('General Nursing (RGN)', 'live')">
+            <div class="prog-card-name">
+              General Nursing (RGN)
+              <small>Full curriculum available</small>
+            </div>
+            <span class="badge-live">✓ Live</span>
           </div>
-          <span class="badge-live">✓ Live</span>
+
+          <!-- Midwifery -->
+          <div class="prog-card" id="pcard-mid" onclick="selectProg('Midwifery', 'soon')">
+            <div class="prog-card-name">
+              Midwifery
+              <small>Curriculum in development</small>
+            </div>
+            <span class="badge-soon">⏳ In Progress</span>
+          </div>
+
+          <!-- NAC -->
+          <div class="prog-card" id="pcard-nac" onclick="selectProg('Nursing Assistants Certificate (NAC)', 'soon')">
+            <div class="prog-card-name">
+              Nursing Assistants Certificate (NAC)
+              <small>Curriculum in development</small>
+            </div>
+            <span class="badge-soon">⏳ In Progress</span>
+          </div>
         </div>
 
-        <!-- Midwifery -->
-        <div class="prog-card" id="pcard-mid" onclick="selectProg('Midwifery', 'soon')">
-          <div class="prog-card-name">
-            Midwifery
-            <small>Curriculum in development</small>
-          </div>
-          <span class="badge-soon">⏳ In Progress</span>
+        <!-- Per-programme notice (hidden by default) -->
+        <div class="prog-notice" id="prog-soon-notice">
+          ⚙️ This curriculum is currently being built. Check back soon — it’s coming.
         </div>
 
-        <!-- NAC -->
-        <div class="prog-card" id="pcard-nac" onclick="selectProg('Nursing Assistants Certificate (NAC)', 'soon')">
-          <div class="prog-card-name">
-            Nursing Assistants Certificate (NAC)
-            <small>Curriculum in development</small>
-          </div>
-          <span class="badge-soon">⏳ In Progress</span>
+        <!-- WIP banner when coming-soon selected -->
+        <div class="prog-wip-banner" id="prog-wip-banner">
+          🚧 This programme is a work in progress. Jonas Coleman and the SRC team are working hard to bring it to you. Stay tuned.
         </div>
+
+        <!-- Hidden input stores selected programme value -->
+        <input type="hidden" id="ob-prog" value="General Nursing (RGN)">
       </div>
 
-      <!-- Per-programme notice (hidden by default) -->
-      <div class="prog-notice" id="prog-soon-notice">
-        ⚙️ This curriculum is currently being built. Check back soon — it’s coming.
+      <!-- Privacy Notice -->
+      <div class="privacy-card">
+        <div class="privacy-card-header">
+          <span class="privacy-card-icon">🔒</span>
+          <strong>Your Privacy is Protected</strong>
+        </div>
+        <p>Vital Score does not collect, store, or transmit any of your data to any server. Everything stays on your device only. Your nickname is never linked to your real identity. No one — not the SRC, not the college, not anyone — can see your GPA or personal information.</p>
       </div>
 
-      <!-- WIP banner when coming-soon selected -->
-      <div class="prog-wip-banner" id="prog-wip-banner">
-        🚧 This programme is a work in progress. Jonas Coleman and the SRC team are working hard to bring it to you. Stay tuned.
-      </div>
-
-      <!-- Hidden input stores selected programme value -->
-      <input type="hidden" id="ob-prog" value="General Nursing (RGN)">
+      <button class="btn" id="ob-start-btn" onclick="obNextToInstallHint()" style="margin-top:8px;">Get Started →</button>
     </div>
 
-    <!-- Privacy Notice -->
-    <div class="privacy-card">
-      <div class="privacy-card-header">
-        <span class="privacy-card-icon">🔒</span>
-        <strong>Your Privacy is Protected</strong>
+    <!-- ════ OB: INSTALL HINT ════ -->
+    <div id="ob-step-install" style="display:none;">
+      <div class="modal-title" style="margin-bottom:12px;">One Last Thing 📲</div>
+      <p class="modal-sub" style="margin-bottom:20px;">Add Vital Score to your home screen so you never lose your GPA data.</p>
+      
+      <div id="ob-install-hint-content" style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
+        <!-- Filled dynamically by JS based on device -->
       </div>
-      <p>Vital Score does not collect, store, or transmit any of your data to any server. Everything stays on your device only. Your nickname is never linked to your real identity. No one — not the SRC, not the college, not anyone — can see your GPA or personal information.</p>
+      
+      <button class="btn" onclick="saveProfile()" style="margin-top:8px;">Done, Let's Go →</button>
     </div>
-
-    <button class="btn" id="ob-start-btn" onclick="saveProfile()" style="margin-top:8px;">Get Started →</button>
   </div>
 </div>
 
@@ -576,7 +660,7 @@
   </div>
 </div>
 
-<!-- ════ PWA INSTALL BANNER ════ -->
+<!-- ════ PWA INSTALL BANNER Android ════ -->
 <div id="install-banner" class="install-banner">
   <div class="install-inner">
     <div class="install-icon">💗</div>
@@ -589,6 +673,56 @@
       <button class="resit-link" style="margin-top:6px;" onclick="dismissInstall()">Not Now</button>
     </div>
   </div>
+</div>
+
+<!-- ════ IOS SAFARI INSTALL SHEET ════ -->
+<div class="modal-overlay" id="ios-install-sheet" style="display:none;align-items:flex-end;">
+  <div class="install-inner ios-sheet-inner">
+    <div class="ios-sheet-handle"></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+      <div style="width:50px;height:50px;background:var(--primary);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;box-shadow:0 4px 10px rgba(30,58,95,0.2);">💗</div>
+      <div>
+        <h3 style="margin:0 0 4px 0;font-size:1.15rem;color:var(--text);font-weight:800;">Install Vital Score</h3>
+        <p style="margin:0;font-size:0.85rem;color:var(--text-sub);">Add to your home screen in 3 taps</p>
+      </div>
+    </div>
+    
+    <hr style="border:0;border-top:1px solid var(--border);margin:0 0 20px 0;">
+    
+    <div class="ios-step-row">
+      <div class="ios-step-icon" style="font-size:1.3rem;">□↑</div>
+      <div class="ios-step-text">Tap the <strong>Share</strong> button at the bottom of your Safari screen</div>
+    </div>
+    <div class="ios-step-row">
+      <div class="ios-step-icon" style="font-size:1.3rem;">⬇️</div>
+      <div class="ios-step-text">Scroll down the menu that appears</div>
+    </div>
+    <div class="ios-step-row">
+      <div class="ios-step-icon" style="font-size:1.3rem;">📲</div>
+      <div class="ios-step-text">Tap <strong>Add to Home Screen</strong> then <strong>Add</strong></div>
+    </div>
+
+    <!-- Result Preview box -->
+    <div class="ios-result-preview">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,0.15);">💗</div>
+        <div style="font-size:0.75rem;font-weight:600;color:var(--text);">Vital Score</div>
+      </div>
+      <p style="margin:0;font-size:0.75rem;color:var(--text-sub);line-height:1.4;">Vital Score appears on your home screen like a real app ✅</p>
+    </div>
+
+    <button class="btn" onclick="showSafariArrow()" style="margin-bottom:10px;">Show Me How</button>
+    <button class="btn btn-outline" onclick="dismissIosInstall()" style="border:none;color:var(--text-sub);font-weight:600;background:transparent;">Maybe Later</button>
+  </div>
+</div>
+
+<!-- ════ SAFARI ARROW OVERLAY ════ -->
+<div id="safari-arrow-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:100px;cursor:pointer;" onclick="hideSafariArrow()">
+  <div style="color:#fff;font-size:1.1rem;font-weight:700;margin-bottom:20px;text-align:center;">
+    Tap the share button here ↓<br>
+    <span style="font-size:0.8rem;font-weight:400;opacity:0.7;display:block;margin-top:10px;">(Tap anywhere to dismiss)</span>
+  </div>
+  <div class="bouncing-arrow" style="font-size:3rem;color:#f5a623;font-weight:900;">↓</div>
 </div>
 
 <!-- ════ ORIENTATION TUTORIAL OVERLAY ════ -->
