@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vital Score | The Coleman Index</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to Content</a>
+
+<!-- ═══════════════════ SPLASH SCREEN ═══════════════════ -->
+<div id="splash">
+  <div class="splash-title">Vital Score</div>
+  <div class="splash-sub">The Coleman Index</div>
+  <div class="splash-pulse">
+    <svg viewBox="0 0 200 40" preserveAspectRatio="xMidYMid meet">
+      <path class="pulse-path" d="M0,20 L30,20 L45,5 L55,35 L65,20 L80,20 L90,10 L100,30 L110,20 L140,20 L155,8 L165,32 L175,20 L200,20"/>
+    </svg>
+  </div>
+  <p class="splash-privacy">100% Private. 100% Anonymous. Stored on your device only.</p>
+</div>
+
+<!-- ═══════════════════ OFFICIAL PRINT RESULT SHEET (screen:hidden) ═══════════════════ -->
+<div id="print-sheet">
+
+  <!-- Watermark -->
+  <div class="pr-watermark">NURSING AND MIDWIFERY TRAINING COLLEGE, DUNKWA-ON-OFFIN</div>
+
+  <!-- College Header -->
+  <div class="pr-header">
+    <div class="pr-logo">🏥</div>
+    <div class="pr-title-block">
+      <div class="pr-college">DUNKWA ON OFFIN NURSING &amp; MIDWIFERY TRAINING COLLEGE</div>
+      <div class="pr-subtitle" id="pr-report-label">VITAL SCORE — THE COLEMAN INDEX</div>
+    </div>
+    <div class="pr-logo">🏥</div>
+  </div>
+  <hr class="pr-divider">
+
+  <!-- Student Info -->
+  <div class="pr-student-info">
+    <div class="pr-info-row"><span class="pr-info-label">Student Name:</span> <span class="pr-info-val" id="pr-name">—</span></div>
+    <div class="pr-info-row"><span class="pr-info-label">Program:</span> <span class="pr-info-val" id="pr-prog">—</span></div>
+    <div class="pr-info-row"><span class="pr-info-label">Printed On:</span> <span class="pr-info-val" id="pr-date">—</span></div>
+  </div>
+
+  <!-- Per-year result sections (injected by JS) -->
+  <div id="pr-year-sections"></div>
+
+  <!-- Cumulative totals -->
+  <div class="pr-totals-grid">
+    <div class="pr-totals-box">
+      <table class="pr-tot-table">
+        <tr><td>TOTAL CREDITS</td><td id="pr-tot-credits">—</td></tr>
+        <tr><td>TOTAL GRADE POINTS</td><td id="pr-tot-pts">—</td></tr>
+      </table>
+    </div>
+    <div class="pr-totals-box pr-totals-highlight">
+      <table class="pr-tot-table">
+        <tr><td>CUMULATIVE GRADE POINTS</td><td id="pr-cgpa-pts">—</td></tr>
+        <tr><td>CUMULATIVE CREDITS</td><td id="pr-cgpa-cred">—</td></tr>
+        <tr><td><strong>CUMULATIVE GPA</strong></td><td><strong id="pr-cgpa">—</strong></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Grade Interpretation + Official Classification Scale (side by side) -->
+  <div style="display:flex;gap:14px;margin-top:14px;">
+
+    <div style="flex:1;">
+      <div class="pr-interp-title">INTERPRETATION OF GRADES</div>
+      <table class="pr-interp-table" style="width:100%;">
+        <thead>
+          <tr><th>GRADE</th><th>BREAKOFF</th><th>GP</th><th>REMARK</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>A</td><td>80.00</td><td>4.00</td><td>EXCELLENT</td></tr>
+          <tr><td>A-</td><td>75.00</td><td>3.75</td><td>VERY GOOD</td></tr>
+          <tr><td>B+</td><td>70.00</td><td>3.50</td><td>GOOD</td></tr>
+          <tr><td>B</td><td>65.00</td><td>3.00</td><td>CREDIT</td></tr>
+          <tr><td>B-</td><td>60.00</td><td>2.50</td><td>AVERAGE</td></tr>
+          <tr><td>C+</td><td>55.00</td><td>2.00</td><td>PASS</td></tr>
+          <tr><td>C</td><td>50.00</td><td>1.50</td><td>PASS</td></tr>
+          <tr><td>D</td><td>40.00</td><td>1.00</td><td>FAIL</td></tr>
+          <tr><td>F</td><td>1.00</td><td>0.00</td><td>FAIL</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="flex:1;">
+      <div class="pr-interp-title">OFFICIAL DONMTC DEGREE CLASSIFICATION</div>
+      <table class="pr-interp-table" style="width:100%;">
+        <thead>
+          <tr><th>GPA RANGE</th><th>CLASSIFICATION</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>3.60 – 4.00</td><td><strong>First Class</strong></td></tr>
+          <tr><td>3.00 – 3.59</td><td>Second Class (Upper Div.)</td></tr>
+          <tr><td>2.50 – 2.99</td><td>Second Class (Lower Div.)</td></tr>
+          <tr><td>2.00 – 2.49</td><td>Third Class Division</td></tr>
+          <tr><td>1.00 – 1.99</td><td>Pass</td></tr>
+          <tr><td>Below 1.00</td><td>Fail</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Signature Block -->
+  <div class="pr-sig-block">
+    <div class="pr-sig-row"><span>SIGNED:</span> <span class="pr-sig-line"></span></div>
+    <div class="pr-sig-row"><span>NAME:</span> <span class="pr-sig-name">PRINCIPAL, DONMTC</span></div>
+    <div class="pr-sig-row"><span>POSITION:</span> <span class="pr-sig-name">PRINCIPAL</span></div>
+    <div class="pr-sig-row"><span>DATE:</span> <span class="pr-sig-line"></span></div>
+  </div>
+
+  <div class="pr-invalid-note">Any erasure renders result invalid</div>
+
+  <!-- Footer -->
+  <div class="pr-footer">
+    <span id="pr-footer-left">Vital Score — The Coleman Index | SRC, DNMTC</span>
+    <span id="pr-footer-right"></span>
+  </div>
+
+</div><!-- /print-sheet -->
+
+<!-- Toast container -->
+<!-- Toast container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ═══════════════════════════════ OFFLINE BANNER ═══════════════════════ -->
+<div id="offline-banner" style="display:none;background:#f5a623;color:#1e3a5f;width:100%;padding:8px;text-align:center;font-size:13px;font-weight:600;z-index:9999;position:relative;">
+  📡 You're offline — Vital Score still works fully. Your data is safe.
+</div>
+
+<!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+<header>
+  <div class="header-brand">
+    <div class="header-brand-name">💗 Vital Score</div>
+    <div class="header-brand-tag">The Coleman Index</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="network-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;cursor:help;" title="All data stored on your device"></span>
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle dark mode">
+      <span id="theme-btn-icon">🌙</span>
+    </button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ MAIN ════════════════════════════════ -->
+<div class="container" id="main-content" role="main">
+
+  <!-- ──────────── TAB 1: CALCULATOR ──────────── -->
+  <div id="tab-calculator" class="tab-content active">
+
+    <div class="year-toggle">
+      <button class="year-btn active" id="yr-btn-1" onclick="switchYear(1)">Year 1</button>
+      <button class="year-btn"        id="yr-btn-2" onclick="switchYear(2)">Year 2</button>
+      <button class="year-btn"        id="yr-btn-3" onclick="switchYear(3)">Year 3</button>
+    </div>
+
+    <!-- Completion bar -->
+    <div class="completion-bar-wrap" id="completion-wrap">
+      <span class="completion-label" id="completion-label">0 of 0 courses graded</span>
+      <span class="completion-pct"   id="completion-pct">0%</span>
+    </div>
+
+    <!-- Locked state -->
+    <div id="year-locked" class="locked-state" style="display:none;">
+      <span class="lock-icon">🔒</span>
+      <h2>Year 3 Coming Soon</h2>
+      <p style="color:var(--text-sub);margin-top:8px;">The Year 3 curriculum will be available soon.</p>
+    </div>
+
+    <!-- Year content -->
+    <div id="year-content">
+      <!-- GPA mini cards -->
+      <div class="gpa-row">
+        <div class="gpa-mini-card">
+          <div class="gpa-mini-label">Sem 1 GPA</div>
+          <div class="gpa-mini-val" id="calc-s1">0.00</div>
+        </div>
+        <div class="gpa-mini-card">
+          <div class="gpa-mini-label">Sem 2 GPA</div>
+          <div class="gpa-mini-val" id="calc-s2">0.00</div>
+        </div>
+        <div class="gpa-mini-card">
+          <div class="gpa-mini-label">Year <span id="calc-yr-label">1</span> GPA</div>
+          <div class="gpa-mini-val" id="calc-yr">0.00</div>
+        </div>
+      </div>
+
+      <!-- Semester 1 courses -->
+      <div class="card">
+        <div class="section-label">Semester 1</div>
+        <div id="s1-courses"></div>
+      </div>
+
+      <!-- Semester 2 courses -->
+      <div class="card">
+        <div class="section-label">Semester 2</div>
+        <div id="s2-courses"></div>
+      </div>
+
+      <p class="privacy-micro">🔒 Your grades are saved on this device only and are never shared.</p>
+    </div>
+
+  </div><!-- /tab-calculator -->
+
+  <!-- ──────────── TAB 2: CUMULATIVE ──────────── -->
+  <div id="tab-cumulative" class="tab-content">
+
+    <!-- Empty state -->
+    <div id="cumul-empty" class="empty-state card" style="display:none;">
+      <div class="emo">📭</div>
+      <h3>No vitals recorded yet</h3>
+      <p>Head to the Calculator tab to enter your first year grades.</p>
+      <button class="btn btn-accent mt-16" style="max-width:200px;"
+        onclick="switchTab('calculator', document.querySelector('.nav-item'))">
+        Go to Calculator
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div id="cumul-content">
+      <!-- CGPA badge -->
+      <div class="card cgpa-badge-wrap">
+        <div class="cgpa-badge" id="cgpa-badge">
+          <span class="cgpa-num" id="cgpa-num">0.00</span>
+          <span class="cgpa-label-sm">CGPA</span>
+        </div>
+        <div class="class-badge badge-grey" id="class-badge">—</div>
+        <p style="color:var(--text-sub);font-size:0.82rem;" id="cgpa-credits">0 total credits</p>
+
+        <!-- Progress bar -->
+        <div class="prog-wrap">
+          <div class="prog-track">
+            <div class="prog-fill" id="prog-fill"></div>
+          </div>
+          <div class="prog-markers">
+            <span>0.0</span><span>2.0</span><span>2.5</span><span>3.0</span><span>3.6</span><span>4.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div id="cgpa-alerts"></div>
+
+      <!-- Year summaries -->
+      <div class="card">
+        <div class="section-label">Year Results</div>
+        <div id="year-summaries"></div>
+      </div>
+
+      <!-- GPA History Chart -->
+      <div class="card" id="gpa-chart-wrap">
+        <div id="gpa-chart-msg" style="text-align:center;color:var(--text-sub);font-size:0.85rem;padding:16px 0;display:none;">
+          📈 Save at least 2 semesters to see your GPA trend.
+        </div>
+        <canvas id="gpa-chart" style="max-height:260px;"></canvas>
+      </div>
+
+      <!-- Share My Vital Score -->
+      <button class="btn btn-share" onclick="generateShareCard()">📱 Share My Vital Score</button>
+      <div id="share-card-wrap" style="display:none;margin-top:12px;">
+        <canvas id="share-canvas" style="width:100%;border-radius:12px;display:block;"></canvas>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="btn" onclick="downloadShareCard()">💾 Save as Image</button>
+          <button class="btn btn-whatsapp" onclick="shareToWhatsApp()">💬 Share to WhatsApp</button>
+        </div>
+      </div>
+
+      <button class="btn btn-accent" onclick="window.print()" style="margin-top:12px;">🖨 Print Report</button>
+    </div>
+
+  </div><!-- /tab-cumulative -->
+
+  <!-- ──────────── TAB 3: PROJECTION (What-If Simulator) ──────────── -->
+  <div id="tab-projection" class="tab-content">
+
+    <div class="section-label" style="margin-bottom:8px;">What-If Simulator</div>
+    <p style="font-size:0.82rem;color:var(--text-sub);margin-bottom:12px;">Compare two grade scenarios side by side. Enter grades in each column to see how your CGPA changes.</p>
+
+    <!-- Two-column simulator -->
+    <div class="sim-grid">
+      <!-- Scenario A -->
+      <div class="card sim-card" id="sim-card-a">
+        <div class="section-label" id="sim-year-a">Current Plan</div>
+        <div id="sim-col-a"></div>
+      </div>
+      <!-- Scenario B -->
+      <div class="card sim-card" id="sim-card-b">
+        <div class="section-label" id="sim-year-b">What If...</div>
+        <div id="sim-col-b"></div>
+      </div>
+    </div>
+
+    <!-- Comparison panel -->
+    <div class="card" style="margin-top:12px;">
+      <div class="section-label">Comparison</div>
+      <div class="sim-compare-cards">
+        <div class="sim-compare-col">
+          <div class="sim-compare-label">Scenario A</div>
+          <div class="sim-compare-gpa" id="sim-cgpa-a">0.00</div>
+          <span id="sim-class-a" class="class-badge badge-grey sim-compare-badge">—</span>
+          <div class="sim-compare-diff" id="sim-diff-a">—</div>
+        </div>
+        <div class="sim-compare-divider">vs</div>
+        <div class="sim-compare-col">
+          <div class="sim-compare-label">Scenario B</div>
+          <div class="sim-compare-gpa" id="sim-cgpa-b">0.00</div>
+          <span id="sim-class-b" class="class-badge badge-grey sim-compare-badge">—</span>
+          <div class="sim-compare-diff" id="sim-diff-b">—</div>
+        </div>
+      </div>
+      <button class="btn btn-outline" style="margin-top:14px;" onclick="resetSimulator()">Reset Simulator</button>
+    </div>
+
+    <!-- Minimum grades calculator -->
+    <div class="card" style="margin-top:12px;">
+      <div class="section-label">What Grade Do I Need?</div>
+      <p style="font-size:0.82rem;color:var(--text-sub);margin-bottom:10px;">Pick a target classification to see the minimum grade needed per course.</p>
+      <div class="form-group">
+        <label class="form-label">Target Classification</label>
+        <select class="form-select" id="min-target" onchange="renderMinGrades()">
+          <option value="3.60">First Class (3.60–4.00)</option>
+          <option value="3.00">Second Class Upper Division (3.00–3.59)</option>
+          <option value="2.50">Second Class Lower Division (2.50–2.99)</option>
+          <option value="2.00">Third Class Division (2.00–2.49)</option>
+          <option value="1.00">Pass (1.00–1.99)</option>
+        </select>
+      </div>
+      <div id="min-grades-out" style="margin-top:10px;"></div>
+    </div>
+
+  </div><!-- /tab-projection -->
+
+  <!-- ──────────── TAB 4: PROFILE ──────────── -->
+  <div id="tab-profile" class="tab-content">
+
+    <!-- Profile card -->
+    <div class="card" style="text-align:center;">
+      <div class="profile-avatar">🎓</div>
+      <div class="profile-name" id="prof-name">—</div>
+      <span class="profile-prog" id="prof-prog-badge">—</span>
+    </div>
+
+    <!-- GPA summary -->
+    <div class="card">
+      <div class="section-label">GPA Summary — By Semester</div>
+      <!-- Per-semester rows; JS shows/hides via prof-sem-row-{y}-{s} -->
+      <div id="prof-sem-row-1-1" class="summary-row" style="display:none;">
+        <span>Y1 Sem 1</span><span class="summary-val" id="prof-sem-1-1">—</span>
+      </div>
+      <div id="prof-sem-row-1-2" class="summary-row" style="display:none;">
+        <span>Y1 Sem 2</span><span class="summary-val" id="prof-sem-1-2">—</span>
+      </div>
+      <div id="prof-sem-row-2-1" class="summary-row" style="display:none;">
+        <span>Y2 Sem 1</span><span class="summary-val" id="prof-sem-2-1">—</span>
+      </div>
+      <div id="prof-sem-row-2-2" class="summary-row" style="display:none;">
+        <span>Y2 Sem 2</span><span class="summary-val" id="prof-sem-2-2">—</span>
+      </div>
+      <div id="prof-sem-row-3-1" class="summary-row" style="display:none;">
+        <span>Y3 Sem 1</span><span class="summary-val" id="prof-sem-3-1">—</span>
+      </div>
+      <div id="prof-sem-row-3-2" class="summary-row" style="display:none;">
+        <span>Y3 Sem 2</span><span class="summary-val" id="prof-sem-3-2">—</span>
+      </div>
+      <div class="summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px;">
+        <span>Cumulative GPA</span>
+        <span class="summary-val" id="prof-cgpa">—</span>
+      </div>
+      <div class="summary-row" id="prof-resit-row" style="display:none;">
+        <span style="color:var(--accent-text);font-weight:600;">Courses Resitted</span>
+        <span class="summary-val" style="color:var(--accent-text);" id="prof-resit-count">0</span>
+      </div>
+    </div>
+    <!-- Font Size Accessibility Toggle -->
+    <div class="card" style="margin-top:4px; margin-bottom:12px;">
+      <div class="section-label">Text Size</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline" style="flex:1; font-size:14px;" onclick="setFontSize('small')" aria-label="Small text">A</button>
+        <button class="btn btn-outline" style="flex:1; font-size:16px;" onclick="setFontSize('medium')" aria-label="Medium text">A</button>
+        <button class="btn btn-outline" style="flex:1; font-size:19px;" onclick="setFontSize('large')" aria-label="Large text">A</button>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" onclick="showModal('onboarding-modal')"
+      style="margin-bottom:12px;">Edit Profile</button>
+    <button class="btn btn-outline" onclick="showModal('changelog-modal')"
+      style="margin-bottom:12px;">🚀 What's New</button>
+    <button class="btn btn-outline" onclick="startTutorial()"
+      style="margin-bottom:12px;">📖 Replay Tutorial</button>
+    <button class="btn btn-outline" onclick="showModal('feedback-sheet')"
+      style="margin-bottom:12px;">💬 Send Feedback</button>
+    <button class="btn btn-danger" onclick="resetAllData()">Reset All Data</button>
+
+    <!-- About card -->
+    <!-- Privacy card -->
+    <div class="card" style="position:relative;">
+      <span class="privacy-safe-badge">Privacy Safe</span>
+      <div class="section-label">🔒 Your Data, Your Device</div>
+      <p style="font-size:0.88rem;color:var(--text);line-height:1.7;margin-bottom:12px;">
+        Vital Score is fully anonymous. No account. No server. No tracking.
+        All your GPA records live only in your phone or browser storage.
+        Clearing your browser data will erase your records — so screenshot
+        your results if you need to keep them.
+      </p>
+      <div class="privacy-amber-tip">
+        ⚠️ <strong>Tip:</strong> Screenshot or print your GPA report before clearing your browser cache.
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:4px;">
+      <div class="section-label">About Vital Score</div>
+      <p style="font-size:0.88rem;color:var(--text);line-height:1.7;">
+        Vital Score was created by <strong>Jonas Coleman</strong>, SRC PRO,
+        to help DNMTC students track, understand, and improve their academic performance.
+        No more manual GPA errors. No more surprises.
+        <strong style="color:var(--primary)">Know your vitals. Own your future.</strong>
+      </p>
+    </div>
+
+    <!-- Programmes card -->
+    <div class="card" style="margin-top:4px;">
+      <div class="section-label">Programmes</div>
+      <table class="prog-table">
+        <tbody>
+          <tr>
+            <td>General Nursing (RGN)</td>
+            <td><span style="color:#15803d;font-weight:700">✅ Live</span></td>
+          </tr>
+          <tr>
+            <td>Midwifery</td>
+            <td><span style="color:#92400e;font-weight:700">🔧 In Progress</span></td>
+          </tr>
+          <tr>
+            <td>Nursing Assistants Certificate (NAC)</td>
+            <td><span style="color:#92400e;font-weight:700">🔧 In Progress</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="prog-table-note">New programmes are added as the curriculum is verified with the academic office.</p>
+    </div>
+
+    <p class="footer-txt">
+      Vital Score v1.0.0 | The Coleman Index<br>
+      Built by Jonas Coleman, SRC PRO | DNMTC
+    </p>
+
+  </div><!-- /tab-profile -->
+
+</div><!-- /container -->
+
+<!-- ═══════════════════════ BOTTOM NAV ══════════════════════════ -->
+<nav class="bottom-nav">
+  <a class="nav-item active" onclick="switchTab('calculator', this)">
+    <span class="nav-icon">🧮</span><span>Calculator</span>
+  </a>
+  <a class="nav-item" onclick="switchTab('cumulative', this)">
+    <span class="nav-icon">📊</span><span>Cumulative</span>
+  </a>
+  <a class="nav-item" onclick="switchTab('projection', this)">
+    <span class="nav-icon">🎯</span><span>Projection</span>
+  </a>
+  <a class="nav-item" onclick="switchTab('profile', this)">
+    <span class="nav-icon">👤</span><span>Profile</span>
+  </a>
+</nav>
+
+<!-- ═══════════════════════ ONBOARDING MODAL ════════════════════ -->
+<div class="modal-overlay" id="onboarding-modal">
+  <div class="modal-box">
+    <div class="modal-title">Welcome to Vital Score 💗</div>
+    <p class="modal-sub">The Coleman Index — Official GPA System of DNMTC</p>
+    <p style="font-size:0.85rem;color:var(--text-sub);text-align:center;margin-bottom:20px;line-height:1.6;">Built for DNMTC students, by your SRC.<br>Track your academic vitals. Know where you stand.</p>
+
+    <div class="form-group">
+      <label class="form-label">Nickname</label>
+      <input class="form-input" id="ob-nick" type="text"
+        placeholder="e.g. Nurse Kofi, Star Girl, Future RGN...">
+      <p class="form-hint">You don't need your real name. Pick any nickname you like.</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Select Your Programme</label>
+
+      <div class="prog-cards">
+        <!-- RGN -->
+        <div class="prog-card selected-live" id="pcard-rgn" onclick="selectProg('General Nursing (RGN)', 'live')">
+          <div class="prog-card-name">
+            General Nursing (RGN)
+            <small>Full curriculum available</small>
+          </div>
+          <span class="badge-live">✓ Live</span>
+        </div>
+
+        <!-- Midwifery -->
+        <div class="prog-card" id="pcard-mid" onclick="selectProg('Midwifery', 'soon')">
+          <div class="prog-card-name">
+            Midwifery
+            <small>Curriculum in development</small>
+          </div>
+          <span class="badge-soon">⏳ In Progress</span>
+        </div>
+
+        <!-- NAC -->
+        <div class="prog-card" id="pcard-nac" onclick="selectProg('Nursing Assistants Certificate (NAC)', 'soon')">
+          <div class="prog-card-name">
+            Nursing Assistants Certificate (NAC)
+            <small>Curriculum in development</small>
+          </div>
+          <span class="badge-soon">⏳ In Progress</span>
+        </div>
+      </div>
+
+      <!-- Per-programme notice (hidden by default) -->
+      <div class="prog-notice" id="prog-soon-notice">
+        ⚙️ This curriculum is currently being built. Check back soon — it’s coming.
+      </div>
+
+      <!-- WIP banner when coming-soon selected -->
+      <div class="prog-wip-banner" id="prog-wip-banner">
+        🚧 This programme is a work in progress. Jonas Coleman and the SRC team are working hard to bring it to you. Stay tuned.
+      </div>
+
+      <!-- Hidden input stores selected programme value -->
+      <input type="hidden" id="ob-prog" value="General Nursing (RGN)">
+    </div>
+
+    <!-- Privacy Notice -->
+    <div class="privacy-card">
+      <div class="privacy-card-header">
+        <span class="privacy-card-icon">🔒</span>
+        <strong>Your Privacy is Protected</strong>
+      </div>
+      <p>Vital Score does not collect, store, or transmit any of your data to any server. Everything stays on your device only. Your nickname is never linked to your real identity. No one — not the SRC, not the college, not anyone — can see your GPA or personal information.</p>
+    </div>
+
+    <button class="btn" id="ob-start-btn" onclick="saveProfile()" style="margin-top:8px;">Get Started →</button>
+  </div>
+</div>
+
+<script src="./app.js"></script>
+
+<!-- ════ FEEDBACK BOTTOM SHEET ════ -->
+<div class="modal-overlay" id="feedback-sheet" style="display:none;align-items:flex-end;">
+  <div class="install-inner" style="width:100%;max-width:600px;margin:0 auto;display:block;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 style="margin:0;color:var(--primary);font-size:1.1rem;">💬 Send Feedback to SRC</h3>
+      <button onclick="closeModal('feedback-sheet')" style="background:none;border:none;font-size:1.2rem;color:var(--text-sub);cursor:pointer;">✕</button>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-sub);margin-bottom:16px;">
+      Found a bug? Have a suggestion? Reach Jonas Coleman directly.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn btn-whatsapp" onclick="window.open('https://wa.me/233240064472?text=Hi Jonas, feedback on Vital Score: ','_blank')">WhatsApp</button>
+      <button class="btn" onclick="window.open('mailto:[EMAIL_ADDRESS]?subject=Vital Score Feedback','_blank')" style="background:var(--bg);color:var(--text);border:1px solid var(--border);">Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ WHAT'S NEW MODAL (CHANGELOG) ════ -->
+<div class="modal-overlay" id="changelog-modal" style="display:none;">
+  <div class="modal-box" style="padding:24px 20px;">
+    <div class="modal-title" id="cl-title" style="margin-bottom:16px;">🎉 What's New</div>
+    <ul id="cl-list" style="font-size:0.9rem;line-height:1.6;color:var(--text);margin-bottom:20px;padding-left:20px;">
+      <!-- Populated by JS -->
+    </ul>
+    <button class="btn" onclick="closeModal('changelog-modal')" style="width:100%;">Got it</button>
+  </div>
+</div>
+
+<!-- ════ PWA INSTALL BANNER ════ -->
+<div id="install-banner" class="install-banner">
+  <div class="install-inner">
+    <div class="install-icon">💗</div>
+    <div class="install-text">
+      <strong>Install Vital Score</strong>
+      <p>Add to your home screen for quick access. Works offline too.</p>
+    </div>
+    <div class="install-btns">
+      <button class="btn" style="font-size:0.8rem;padding:8px 14px;" onclick="installApp()">Install Now</button>
+      <button class="resit-link" style="margin-top:6px;" onclick="dismissInstall()">Not Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ ORIENTATION TUTORIAL OVERLAY ════ -->
+<div id="tutorial-overlay" class="tutorial-overlay" style="display:none;">
+  <button class="tutorial-skip" onclick="endTutorial()">Skip</button>
+  
+  <div class="tutorial-slider" id="tutorial-slider">
+    <!-- SLIDE 1 -->
+    <div class="tutorial-slide" id="tslide-1">
+      <div class="tutorial-icon">🧮</div>
+      <div class="tutorial-title">Calculate Your GPA</div>
+      <div class="tutorial-body">Select your courses and grades in the Calculator tab. Your GPA updates instantly as you go.</div>
+      <button class="btn tutorial-btn" onclick="nextTutorialSlide(2)">Next →</button>
+    </div>
+    <!-- SLIDE 2 -->
+    <div class="tutorial-slide" id="tslide-2">
+      <div class="tutorial-icon">📊</div>
+      <div class="tutorial-title">Track Your Progress</div>
+      <div class="tutorial-body">Save each semester's results. Your Cumulative GPA and academic classification update automatically.</div>
+      <button class="btn tutorial-btn" onclick="nextTutorialSlide(3)">Next →</button>
+    </div>
+    <!-- SLIDE 3 -->
+    <div class="tutorial-slide" id="tslide-3">
+      <div class="tutorial-icon">🎯</div>
+      <div class="tutorial-title">Plan Your Future</div>
+      <div class="tutorial-body">Use the Projection tab to simulate different grade scenarios and plan your path to First Class.</div>
+      <button class="btn tutorial-btn" onclick="endTutorial()">Get Started →</button>
+    </div>
+  </div>
+
+  <div class="tutorial-dots">
+    <div class="tdot active" id="tdot-1"></div>
+    <div class="tdot" id="tdot-2"></div>
+    <div class="tdot" id="tdot-3"></div>
+  </div>
+</div>
+
+</body>
+</html>
