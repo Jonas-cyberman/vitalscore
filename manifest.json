@@ -1,6 +1,6 @@
 {
-  "name": "Vital Score",
-  "short_name": "VitalScore",
+  "name": "Gradely",
+  "short_name": "Gradely",
   "description": "The Coleman Index — Official GPA System of DNMTC",
   "start_url": "./index.html",
   "display": "standalone",

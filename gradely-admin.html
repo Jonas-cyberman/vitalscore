@@ -1,0 +1,2089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gradely Admin | The Coleman Index</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="admin-manifest.json">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gradely Admin">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- FONTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        head { display: none !important; }
+
+        /* ─── CSS VARIABLES ─── */
+        :root {
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --surface: #ffffff;
+            --primary: #1e3a5f;
+            --accent: #f5a623;
+            --secondary: #64748b;
+            --border: #e5e7eb;
+            --text-main: #1e293b;
+            --text-muted: #6b7280;
+            --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+            --radius-xl: 20px;
+            --radius-lg: 14px;
+            --sidebar-width: 260px;
+            --sidebar-bg: #1e3a5f;
+            --topbar-height: 64px;
+            --content-padding: 24px;
+            --bottom-nav-height: 60px;
+
+            /* PASTEL ACCENTS */
+            --p-pink: #fdf2f8; --p-pink-text: #db2777;
+            --p-blue: #eff6ff; --p-blue-text: #2563eb;
+            --p-green: #f0fdf4; --p-green-text: #16a34a;
+            --p-green-bg: #dcfce7;
+            --p-orange: #fff7ed; --p-orange-text: #ea580c;
+        }
+
+        /* ─── DARK MODE ─── */
+        body.dark-mode {
+            --bg: #0d1117;
+            --card: #161b22;
+            --surface: #161b22;
+            --border: #30363d;
+            --text-main: #e6edf3;
+            --text-muted: #8b949e;
+            --sidebar-bg: #0d1117;
+        }
+
+        @media (max-width: 1023px) { :root { --content-padding: 16px; } }
+        @media (max-width: 767px)  { :root { --content-padding: 12px; } }
+
+        /* ─── RESET ─── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+        /* ─── ICONS ─── */
+        .icon { width: 20px; height: 20px; stroke-width: 2; stroke: currentColor; fill: none; flex-shrink: 0; }
+
+        /* ══════════════════════════════════════
+           LAYOUT
+        ══════════════════════════════════════ */
+        #dashboard { display: flex; height: 100vh; overflow: hidden; }
+
+        /* ─── SIDEBAR (Desktop) ─── */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 200;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            display: flex; flex-direction: column;
+            padding: 28px 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .brand-name { font-weight: 800; font-size: 1.4rem; color: #fff; letter-spacing: -0.5px; }
+        .brand-sub  { font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+        .nav-list { list-style: none; flex: 1; padding: 16px 12px; }
+        .nav-item {
+            padding: 0 12px;
+            height: 48px;
+            display: flex; align-items: center; gap: 12px;
+            color: rgba(255,255,255,0.65);
+            font-weight: 600; font-size: 0.88rem;
+            cursor: pointer;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .nav-item:hover  { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-item.active { background: var(--accent); color: var(--primary); }
+        .nav-item.active .icon { stroke: var(--primary); }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .sidebar-admin-info { display: flex; align-items: center; gap: 10px; }
+        .sidebar-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--accent); color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.85rem; flex-shrink: 0;
+        }
+        .sidebar-admin-name { font-size: 0.85rem; font-weight: 700; color: #fff; }
+        .sidebar-admin-role { font-size: 0.72rem; color: rgba(255,255,255,0.5); }
+
+        /* ─── SIDEBAR OVERLAY (Tablet) ─── */
+        .sidebar-backdrop {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 998;
+        }
+        body.sidebar-open .sidebar-backdrop { display: block; }
+
+        /* ─── MAIN AREA ─── */
+        .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ─── TOP BAR ─── */
+        .top-bar {
+            height: var(--topbar-height);
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+            padding-top: env(safe-area-inset-top);
+            z-index: 100;
+        }
+        .top-bar-left  { display: flex; align-items: center; gap: 16px; }
+        .top-bar-right { display: flex; align-items: center; gap: 12px; }
+        .top-bar-title { font-weight: 800; font-size: 1.1rem; color: var(--primary); }
+        .topbar-logo   { font-weight: 800; font-size: 1.2rem; color: var(--primary); display: none; }
+
+        /* Hamburger (hidden on desktop) */
+        .hamburger-btn {
+            display: none; width: 40px; height: 40px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--card);
+            align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+        }
+
+        /* Avatar Dropdown */
+        .avatar-btn { position: relative; cursor: pointer; }
+        .avatar-circle {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: var(--primary); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.9rem;
+        }
+        .avatar-dropdown {
+            display: none; position: absolute; right: 0; top: calc(100% + 10px);
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 8px; min-width: 220px; box-shadow: var(--shadow); z-index: 400;
+        }
+        .avatar-btn.open .avatar-dropdown { display: block; }
+        .dropdown-header { padding: 12px 12px 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+        .dropdown-name { font-weight: 700; font-size: 0.9rem; }
+        .dropdown-role { font-size: 0.75rem; color: var(--text-muted); }
+        .dropdown-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 8px;
+            font-size: 0.88rem; font-weight: 600; cursor: pointer;
+            transition: 0.15s; color: var(--text-main);
+        }
+        .dropdown-item:hover { background: var(--bg); }
+        .dropdown-item.danger { color: #b91c1c; }
+
+        /* Dark mode toggle */
+        .dark-toggle {
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 1px solid var(--border); background: var(--card);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1rem; transition: 0.2s;
+        }
+        .dark-toggle:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        /* ─── CONTENT SCROLL ─── */
+        .content-scroll {
+            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: var(--content-padding);
+            padding-bottom: calc(var(--content-padding) + env(safe-area-inset-bottom));
+        }
+
+        /* ─── STICKY HEADER PILL ─── */
+        .header-sticky-wrap {
+            position: sticky; top: 0; z-index: 50;
+            background: var(--bg);
+            padding: 12px 0 16px; margin-bottom: 20px;
+        }
+        .header-top {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card); padding: 20px 32px;
+            border-radius: 100px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+        .welcome-h  { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
+        .welcome-p  { color: var(--text-muted); font-weight: 600; font-size: 0.9rem; margin-top: 2px; }
+        .header-top .btn-icon {
+            width: 42px; height: 42px; background: var(--bg);
+            border: 1px solid var(--border); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--secondary); transition: var(--transition); cursor: pointer;
+        }
+        .header-top .btn-icon:hover { background: var(--primary); color: #fff; }
+
+        /* ─── RIGHT PANEL ─── */
+        .right-panel {
+            width: 300px; background: var(--card); border-left: 1px solid var(--border);
+            padding: 32px 20px; overflow-y: auto; flex-shrink: 0;
+            display: flex; flex-direction: column;
+        }
+        .profile-hero { text-align: center; margin-bottom: 32px; }
+        .profile-img-lg {
+            width: 80px; height: 80px; border-radius: 50%; background: var(--bg);
+            margin: 0 auto 12px; border: 3px solid var(--card);
+            box-shadow: var(--shadow);
+        }
+        .profile-name { font-weight: 800; font-size: 1.1rem; }
+        .profile-role { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+        .agenda-section { flex: 1; }
+        .agenda-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .agenda-item  { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .agenda-time  { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); width: 80px; }
+        .agenda-dot   { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+
+        /* ══════════════════════════════════════
+           PAGE CONTENT
+        ══════════════════════════════════════ */
+        .page-area { padding: 0; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .card-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+        .welcome-h.page-title { font-size: 1.4rem; }
+
+        /* ─── CARDS ─── */
+        .card {
+            background: var(--card); border-radius: var(--radius-xl);
+            border: 1px solid var(--border); padding: 24px;
+            box-shadow: var(--shadow-sm); margin-bottom: 20px;
+        }
+        .card-title { font-weight: 800; font-size: 1.1rem; }
+
+        /* ─── STAT CARDS ─── */
+        .stats-row  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card  { padding: 24px; border-radius: 16px; position: relative; overflow: hidden; transition: 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-label { font-size: 0.8rem; font-weight: 700; opacity: 0.7; margin-bottom: 20px; display: block; text-transform: uppercase; }
+        .stat-val   { font-size: 1.8rem; font-weight: 800; }
+        .stat-icon-bg {
+            position: absolute; right: 16px; bottom: 16px; width: 40px; height: 40px;
+            border-radius: 50%; background: rgba(255,255,255,0.7);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+        .pink-c   { background: var(--p-pink); color: var(--p-pink-text); }
+        .blue-c   { background: var(--p-blue); color: var(--p-blue-text); }
+        .green-c  { background: var(--p-green); color: var(--p-green-text); }
+        .orange-c { background: var(--p-orange); color: var(--p-orange-text); }
+
+        /* ─── TABLES ─── */
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .admin-table   { width: 100%; border-collapse: collapse; min-width: 700px; }
+        .admin-table th { text-align: left; padding: 14px 16px; font-size: 0.8rem; color: var(--text-muted); border-bottom: 2px solid var(--border); white-space: nowrap; font-weight: 700; text-transform: uppercase; }
+        .admin-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
+        .admin-table tr:last-child td { border-bottom: none; }
+        .actions-cell   { text-align: right; white-space: nowrap; }
+        .table-wrap     { overflow-x: auto; }
+
+        /* ─── MOBILE CARDS (replace tables on mobile) ─── */
+        .mobile-cards { display: none; }
+        .m-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px; margin-bottom: 10px;
+        }
+        .m-card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+        .m-card-sub   { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; }
+        .m-card-row   { display: flex; justify-content: space-between; align-items: center; }
+        .m-card-actions { display: flex; gap: 8px; }
+
+        /* ─── BADGES ─── */
+        .badge {
+            padding: 4px 10px; border-radius: 8px; font-size: 0.72rem;
+            font-weight: 700; text-transform: uppercase; display: inline-flex;
+            align-items: center; justify-content: center; white-space: nowrap;
+        }
+        .badge-active   { background: var(--p-green); color: var(--p-green-text); }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .badge-live     { background: var(--p-green); color: var(--p-green-text); }
+        .badge-admin    { background: var(--p-blue); color: var(--p-blue-text); }
+        .badge-super    { background: var(--p-pink); color: var(--p-pink-text); }
+
+        /* ─── BUTTONS ─── */
+        button { border: none; background: none; font-family: inherit; cursor: pointer; }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 11px 20px; border-radius: 12px;
+            font-weight: 700; cursor: pointer; transition: var(--transition);
+            border: none; font-family: inherit; font-size: 0.9rem; gap: 8px;
+        }
+        .btn-black   { background: var(--primary); color: #fff; }
+        .btn-black:hover { opacity: 0.88; }
+        .btn-primary { background: var(--p-blue-text); color: #fff; }
+        .btn-outline { background: var(--card); border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: var(--bg); }
+        .btn-icon {
+            width: 34px; height: 34px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--card);
+            display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; font-size: 0.9rem;
+        }
+        .btn-icon:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-icon.delete:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+        .btn-signout { background: #fee2e2; color: #b91c1c; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; }
+        .btn-signout:hover { background: #ef4444; color: #fff; }
+
+        /* ─── FORMS ─── */
+        .form-group { margin-bottom: 18px; }
+        .label { display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 6px; color: #374151; }
+        .input {
+            width: 100%; padding: 13px 16px;
+            border-radius: 12px; border: 2px solid var(--border);
+            background: var(--bg); font-family: inherit;
+            font-size: 1rem; transition: var(--transition);
+            color: var(--text-main); -webkit-appearance: none;
+            box-sizing: border-box;
+        }
+        .input:focus { border-color: var(--primary); background: var(--card); outline: none; box-shadow: 0 0 0 3px rgba(30,58,95,0.1); }
+
+        /* ─── ACTIVITY ─── */
+        .activity-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .avatar { width: 38px; height: 38px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+
+        /* ─── MODALS ─── */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px); z-index: 2000;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-card {
+            background: var(--card); width: 100%; max-width: 520px;
+            border-radius: 24px; overflow: hidden;
+            animation: modalPop 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes modalPop { from { opacity:0; transform: scale(0.9) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
+        .modal-header { padding: 20px 24px; background: var(--primary); color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body   { padding: 24px; max-height: 70vh; overflow-y: auto; }
+        .modal-footer { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; gap: 12px; }
+
+        /* ─── BOTTOM SHEET HANDLE ─── */
+        .sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+
+        /* ─── TOAST ─── */
+        .toast {
+            position: fixed; bottom: 32px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--primary); color: #fff;
+            padding: 14px 28px; border-radius: 14px;
+            font-weight: 700; box-shadow: var(--shadow); transition: 0.4s cubic-bezier(0.175,0.885,0.32,1.15);
+            z-index: 10000; display: flex; align-items: center; gap: 10px; white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast-success { background: #16a34a; }
+        .toast-error   { background: #dc2626; }
+
+        /* ─── BOTTOM NAV (Mobile only — hidden by default) ─── */
+        .bottom-nav {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0;
+            height: var(--bottom-nav-height); background: var(--card);
+            border-top: 1px solid var(--border); z-index: 300;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .bottom-nav-inner { display: flex; height: 100%; }
+        .bn-item {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 0.62rem; font-weight: 600; color: var(--text-muted);
+            cursor: pointer; transition: 0.15s; border: none; background: none;
+            font-family: inherit; gap: 2px;
+        }
+        .bn-item.active   { color: var(--primary); }
+        .bn-item .bn-icon { font-size: 1.25rem; line-height: 1; }
+
+        /* ─── BOTTOM SHEET (Manage menu / Modals on mobile) ─── */
+        .bottom-sheet-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 1500;
+            align-items: flex-end; justify-content: center;
+        }
+        .bottom-sheet-overlay.open { display: flex; }
+        .bottom-sheet {
+            background: var(--card); border-radius: 24px 24px 0 0;
+            width: 100%; max-height: 90vh; overflow-y: auto;
+            padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+            animation: slideUp 0.35s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .sheet-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px 12px; border-bottom: 1px solid var(--border);
+            cursor: pointer; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
+            transition: 0.15s;
+        }
+        .sheet-item:last-child { border-bottom: none; }
+        .sheet-item:hover { background: var(--bg); }
+        .sheet-icon { font-size: 1.3rem; width: 36px; text-align: center; }
+
+        /* ─── FULL-PAGE LOADER ─── */
+        #page-loader {
+            position: fixed; inset: 0; background: var(--primary);
+            z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 20px;
+        }
+        .loader-spinner-lg {
+            width: 48px; height: 48px; border-radius: 50%;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: #fff; animation: spin 1s linear infinite;
+        }
+        .loader-text { color: rgba(255,255,255,0.8); font-weight: 600; font-size: 0.9rem; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── MISC ─── */
+        .header-title { font-weight: 800; font-size: 1rem; color: var(--primary); }
+        .admin-meta   { display: flex; align-items: center; gap: 16px; }
+        .admin-name   { font-weight: 700; font-size: 0.9rem; }
+        .admin-role   { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* ══════════════════════════════════════
+           RESPONSIVE BREAKPOINTS
+        ══════════════════════════════════════ */
+
+        /* ─── TABLET (768px – 1023px) ─── */
+        @media (max-width: 1023px) {
+            .sidebar {
+                position: fixed; top: 0; left: 0; height: 100vh;
+                transform: translateX(-100%); z-index: 999;
+                width: 240px;
+            }
+            body.sidebar-open .sidebar { transform: translateX(0); }
+            .hamburger-btn { display: flex; }
+            .top-bar-title { display: none; }
+            .topbar-logo   { display: block; }
+            .right-panel   { display: none; }
+            .stats-row     { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ─── MOBILE (below 768px) ─── */
+        @media (max-width: 767px) {
+            .sidebar { display: none; }
+            .sidebar-backdrop { display: none !important; }
+            .bottom-nav       { display: block; }
+
+            /* make room for bottom nav */
+            .content-scroll {
+                padding-bottom: calc(var(--bottom-nav-height) + 20px + env(safe-area-inset-bottom));
+            }
+
+            /* Pill header becomes simple bar */
+            .header-sticky-wrap { padding: 10px 0 8px; }
+            .header-top {
+                border-radius: 14px; padding: 14px 18px;
+            }
+            .welcome-h { font-size: 1.2rem; }
+            .welcome-p { font-size: 0.8rem; }
+            .card-h { flex-direction: column; align-items: flex-start; }
+            .card-h .btn { width: 100%; }
+
+            /* 2-col stats */
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .stat-card { padding: 16px; }
+            .stat-val  { font-size: 1.4rem; }
+
+            /* Tables → Cards */
+            .data-table   { display: none !important; }
+            .mobile-cards { display: block; }
+
+            /* Modals → bottom sheets */
+            .modal-overlay {
+                align-items: flex-end; justify-content: center; padding: 0;
+            }
+            .modal-card {
+                border-radius: 24px 24px 0 0; max-width: 100%;
+                animation: slideUp 0.35s ease;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+
+            /* Toast → top center */
+            .toast {
+                bottom: auto; top: calc(var(--topbar-height) + 8px);
+                left: 12px; right: 12px; border-radius: 12px;
+                transform: translateY(-20px); opacity: 0;
+                transition: 0.3s ease;
+                white-space: normal; text-align: center;
+            }
+            .toast.show { transform: translateY(0); opacity: 1; }
+
+            /* Buttons full width */
+            .modal-footer { flex-direction: column; }
+            .modal-footer .btn { width: 100%; padding: 14px; font-size: 1rem; }
+
+            /* Forms */
+            .input { font-size: 1rem; }
+        }
+    </style>
+
+    <!-- ─── ICONS STORE (SVG) ─── -->
+    <svg style="display:none;">
+        <symbol id="icon-dash" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></symbol>
+        <symbol id="icon-book" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></symbol>
+        <symbol id="icon-layers" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></symbol>
+        <symbol id="icon-award" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></symbol>
+        <symbol id="icon-users" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></symbol>
+        <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></symbol>
+    </svg>
+
+    <!-- ─── FULL-PAGE LOADER ─── -->
+    <div id="page-loader">
+        <div class="loader-spinner-lg"></div>
+        <div class="loader-text">Loading Gradely Admin...</div>
+    </div>
+
+    <!-- ─── DASHBOARD LAYOUT ─── -->
+    <div id="dashboard" style="display:none;">
+
+        <!-- Sidebar Backdrop (tablet overlay) -->
+        <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+        <!-- Navy Sidebar -->
+        <aside class="sidebar" id="main-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-name">Gradely</div>
+                <div class="brand-sub">Admin Panel</div>
+            </div>
+            <nav>
+                <ul class="nav-list">
+                    <li class="nav-item active" onclick="switchPage('overview', this)">
+                        <svg class="icon"><use href="#icon-dash"/></svg> Dashboard
+                    </li>
+                    <li class="nav-item" onclick="switchPage('programmes', this)">
+                        <svg class="icon"><use href="#icon-layers"/></svg> Programmes
+                    </li>
+                    <li class="nav-item" onclick="switchPage('courses', this)">
+                        <svg class="icon"><use href="#icon-book"/></svg> Courses
+                    </li>
+                    <li class="nav-item" onclick="switchPage('grades', this)">
+                        <svg class="icon"><use href="#icon-award"/></svg> Grade Scale
+                    </li>
+                    <li class="nav-item" onclick="switchPage('classifications', this)">
+                        <svg class="icon"><use href="#icon-award"/></svg> Classifications
+                    </li>
+                    <li class="nav-item" onclick="switchPage('settings', this)">
+                        <svg class="icon"><use href="#icon-settings"/></svg> App Settings
+                    </li>
+                    <li id="nav-admins" class="nav-item" onclick="switchPage('admins', this)" style="display:none;">
+                        <svg class="icon"><use href="#icon-users"/></svg> Admin Users
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-admin-info">
+                    <div class="sidebar-avatar" id="sidebar-initials">JC</div>
+                    <div>
+                        <div class="sidebar-admin-name" id="sidebar-admin-name">Jonas Coleman</div>
+                        <div class="sidebar-admin-role" id="sidebar-admin-role">superadmin</div>
+                    </div>
+                </div>
+                <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.3); background:rgba(239,68,68,0.08); font-size:0.85rem; padding:10px 16px;" onclick="signOut()">Sign Out</button>
+            </div>
+        </aside>
+
+        <!-- Main Area -->
+        <div class="main-area">
+
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">
+                        <svg class="icon"><use href="#icon-dash"/></svg>
+                    </button>
+                    <span class="topbar-logo">Gradely Admin</span>
+                    <span class="top-bar-title" id="current-page-title">Dashboard</span>
+                </div>
+                <div class="top-bar-right">
+                    <button class="dark-toggle" id="dark-toggle-btn" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                        <svg class="icon"><use href="#icon-moon"/></svg>
+                    </button>
+                    <!-- Avatar Dropdown (tablet/mobile) -->
+                    <div class="avatar-btn" id="avatar-btn" onclick="toggleAvatarDropdown()">
+                        <div class="avatar-circle" id="topbar-initials">JC</div>
+                        <div class="avatar-dropdown" id="avatar-dropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-name" id="topbar-admin-name">Jonas Coleman</div>
+                                <div class="dropdown-role" id="topbar-admin-role">superadmin</div>
+                            </div>
+                            <div class="dropdown-item" onclick="openModal('change-pass-modal')">🔑 Change Password</div>
+                            <div class="dropdown-item danger" onclick="signOut()">🚪 Sign Out</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-scroll">
+                <div class="header-sticky-wrap">
+                    <header class="header-top">
+                        <div>
+                            <h1 class="welcome-h" onclick="document.getElementById('diagnostic-panel').style.display = document.getElementById('diagnostic-panel').style.display === 'none' ? 'block' : 'none'" style="cursor:help;">Welcome back, <span id="admin-first-name">Admin</span></h1>
+                            <p class="welcome-p">Track app performance and manage your global curriculum.</p>
+                            <div id="db-error-banner" style="display:none; margin-top:12px; padding:10px; background:#fee2e2; color:#b91c1c; border-radius:8px; font-size:0.82rem; font-weight:600; border:1px solid #fecaca;">
+                                ⚠️ <span id="db-error-msg"></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <button class="btn-icon header-top-btn" title="Search"><svg class="icon"><use href="#icon-search"/></svg></button>
+                            <button class="btn-icon header-top-btn" style="position: relative;" title="Notifications">
+                                <svg class="icon"><use href="#icon-bell"/></svg>
+                                <span style="position: absolute; top: 8px; right: 8px; width: 7px; height: 7px; background: #fb923c; border-radius: 50%; border: 2px solid white;"></span>
+                            </button>
+                        </div>
+                    </header>
+                </div>
+
+                <div class="page-area">
+                    <div id="diagnostic-panel" style="display:none; margin:24px; padding:20px; background:#f8fafc; border:1px solid var(--border); border-radius:16px;">
+                        <h4 style="margin-bottom:12px; font-weight:800; display:flex; justify-content:space-between; align-items:center;">
+                            🛠️ Diagnostic Panel
+                            <div>
+                                <button class="btn btn-outline" style="padding:4px 12px; font-size:0.7rem; margin-right:8px;" onclick="loadAdminData()">🔄 Force Refresh</button>
+                                <button class="btn btn-outline" style="padding:4px 12px; font-size:0.7rem;" onclick="document.getElementById('diagnostic-panel').style.display='none'">Hide</button>
+                            </div>
+                        </h4>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; font-size:0.8rem; font-family:monospace;">
+                            <div class="card" style="margin:0; padding:12px;">
+                                <p><strong>Auth UID:</strong> <span id="diag-uid">-</span></p>
+                                <p><strong>Auth Role:</strong> <span id="diag-role">-</span></p>
+                                <p><strong>In Admin Table:</strong> <span id="diag-admin-entry">-</span></p>
+                            </div>
+                            <div class="card" style="margin:0; padding:12px;">
+                                <p><strong>Programmes:</strong> <span id="diag-count-progs">0</span></p>
+                                <p><strong>Courses:</strong> <span id="diag-count-courses">0</span></p>
+                                <p><strong>Years:</strong> <span id="diag-count-years">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- OVERVIEW -->
+                    <div id="page-overview" class="page active">
+                        <div class="stats-row">
+                            <div class="stat-card pink-c">
+                                <span class="stat-label">Total Programmes</span>
+                                <div class="stat-val" id="stat-progs">0</div>
+                                <div class="stat-icon-bg">📊</div>
+                            </div>
+                            <div class="stat-card blue-c">
+                                <span class="stat-label">Active Courses</span>
+                                <div class="stat-val" id="stat-courses">0</div>
+                                <div class="stat-icon-bg">📚</div>
+                            </div>
+                            <div class="stat-card green-c">
+                                <span class="stat-label">Live Status</span>
+                                <div class="stat-val" id="stat-live">0</div>
+                                <div class="stat-icon-bg">✅</div>
+                            </div>
+                            <div class="stat-card orange-c">
+                                <span class="stat-label">Pending Updates</span>
+                                <div class="stat-val" id="stat-soon">0</div>
+                                <div class="stat-icon-bg">⏳</div>
+                            </div>
+                        </div>
+                    
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px;">
+                            <div class="card">
+                                <div class="card-h">
+                                    <h3 class="card-title">Recent Activity</h3>
+                                    <a href="#" style="color: var(--p-blue-text); font-weight: 700; font-size: 0.85rem; text-decoration: none;">Manage All</a>
+                                </div>
+                                <div id="overview-prog-table"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-h"><h3 class="card-title">Quick Actions</h3></div>
+                                <button class="btn btn-black" style="margin-bottom: 12px; justify-content: flex-start;" onclick="switchPage('courses', document.querySelectorAll('.nav-item')[2])">➕ Add New Course</button>
+                                <button class="btn btn-black" style="margin-bottom: 12px; justify-content: flex-start;" onclick="switchPage('programmes', document.querySelectorAll('.nav-item')[1])">📚 Manage Programmes</button>
+                                <a href="index.html" target="_blank" class="btn" style="text-decoration: none; border: 1px solid #e2e8f0; color: var(--primary); font-weight: 700;">🌐 View Student App</a>
+                            </div>
+                    </div>
+                </div> <!-- Closes page-overview -->
+                
+                <!-- PROGRAMMES PAGE -->
+                <div id="page-programmes" class="page">
+                    <div class="card-h">
+                        <h2 class="welcome-h">Programmes</h2>
+                        <button class="btn btn-black" style="width:auto;" onclick="openAddProg()">＋ Add Programme</button>
+                    </div>
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div class="table-wrapper">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>PROGRAMME NAME</th>
+                                        <th>CODE</th>
+                                        <th>STATUS</th>
+                                        <th class="actions-cell">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="programmes-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COURSES PAGE -->
+                <div id="page-courses" class="page">
+                    <div class="card-h">
+                        <h2 class="welcome-h">Course Management</h2>
+                        <div style="display:flex; gap:12px;">
+                            <button class="btn btn-black" style="width:auto; background:var(--p-blue-text);" onclick="openCourseModal()">＋ Add Single</button>
+                            <button class="btn btn-black" style="width:auto; border:1px solid var(--border); background:white; color:black;" onclick="document.getElementById('csv-input').click()">📁 Bulk Import</button>
+                            <input type="file" id="csv-input" hidden accept=".csv" onchange="handleCSV(event)">
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom:24px; padding:20px;">
+                        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px;">
+                            <select id="filter-prog" class="input" onchange="renderCoursesPage()" style="padding:10px;"></select>
+                            <select id="filter-year" class="input" onchange="renderCoursesPage()" style="padding:10px;">
+                                <option value="all">All Years</option>
+                                <option value="1">Year 1</option>
+                                <option value="2">Year 2</option>
+                                <option value="3">Year 3</option>
+                            </select>
+                            <select id="filter-sem" class="input" onchange="renderCoursesPage()" style="padding:10px;">
+                                <option value="all">All Semesters</option>
+                                <option value="1">1st Semester</option>
+                                <option value="2">2nd Semester</option>
+                            </select>
+                                <input type="text" id="course-search" class="input" placeholder="Search code/name..." onkeyup="renderCoursesPage()" style="padding:10px;">
+                            </div>
+                        </div>
+
+                        <div class="card" style="padding: 0; overflow: hidden;">
+                            <div class="table-wrapper">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px; text-align: center;"><input type="checkbox" onchange="toggleAllCourses(this)"></th>
+                                            <th>CODE</th>
+                                            <th>COURSE NAME</th>
+                                            <th>CREDITS</th>
+                                            <th>YEAR / SEM</th>
+                                            <th>STATUS</th>
+                                            <th class="actions-cell">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="courses-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- GRADE SCALE PAGE -->
+                <div id="page-grades" class="page">
+                    <div class="card-h">
+                        <h2 class="welcome-h">Grade Scale</h2>
+                        <div style="display:flex; gap:12px;">
+                            <button class="btn btn-black" style="width:auto; background:var(--p-orange-text);" onclick="resetGradesToDefault()">🔄 Reset Defaults</button>
+                            <button class="btn btn-black" style="width:auto;" onclick="openGradeModal()">＋ Add Grade</button>
+                        </div>
+                    </div>
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div class="table-wrapper">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>GRADE</th>
+                                        <th>GPA POINTS</th>
+                                        <th>REMARK / DESC</th>
+                                        <th class="actions-cell">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="grade-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CLASSIFICATIONS PAGE -->
+                <div id="page-classifications" class="page">
+                    <div class="card-h">
+                        <h2 class="welcome-h">Degree Classifications</h2>
+                        <select id="class-filter-prog" class="input" onchange="renderClassificationsPage()" style="width:auto; min-width:250px;"></select>
+                    </div>
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div class="table-wrapper">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>LABEL / HONOR</th>
+                                        <th>GPA RANGE</th>
+                                        <th>BADGE PREVIEW</th>
+                                        <th>REMARK</th>
+                                        <th class="actions-cell">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classifications-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS PAGE -->
+                <div id="page-settings" class="page">
+                    <div class="card-h">
+                        <h2 class="welcome-h">System Settings</h2>
+                        <button class="btn btn-black" style="width:auto;" onclick="pushVersionUpdate()">🚀 Push Version Update</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:32px;">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:24px;">App Branding</h3>
+                            <div id="settings-branding-list"></div>
+                        </div>
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:24px;">Version & Metadata</h3>
+                            <div id="settings-version-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADMIN USERS PAGE -->
+                <div id="page-admins" class="page">
+                    <div class="card-h">
+                        <h2 class="welcome-h">Admin Access Control</h2>
+                        <button class="btn btn-black" style="width:auto;" onclick="openAdminModal()">＋ Invite Access</button>
+                    </div>
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div class="table-wrapper">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ADMIN NAME</th>
+                                        <th>ACCESS ROLE</th>
+                                        <th>POSITION</th>
+                                        <th>STATUS</th>
+                                        <th class="actions-cell">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admins-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- CLOSES page-area -->
+        </div> <!-- CLOSES content-scroll -->
+
+        <!-- Right Profile Panel -->
+        <aside class="right-panel">
+            <div class="profile-hero">
+                <div class="profile-img-lg" id="profile-initials" style="display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:var(--primary);">JC</div>
+                <div class="profile-name" id="admin-display-name">Jonas Coleman</div>
+                <div class="profile-role" id="admin-display-role">Adminstrator</div>
+                <div style="margin-top:16px;">
+                    <span class="badge" id="online-badge" style="background:rgba(34,197,94,0.1); color:#166534; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.75rem;">● Available</span>
+                </div>
+            </div>
+
+            <div class="agenda-section">
+                <div class="agenda-title">
+                    <h4 style="font-weight:800;">My Agenda</h4>
+                    <a href="#" style="color:var(--p-blue-text); font-size:0.8rem; font-weight:700; text-decoration:none;">View All</a>
+                </div>
+                <div id="agenda-list">
+                    <div class="agenda-item">
+                        <div class="agenda-time">12:30-13:30</div>
+                        <div class="agenda-dot"></div>
+                        <div style="font-size:0.85rem; font-weight:700;">Course Catalog Sync</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">14:30-15:15</div>
+                        <div class="agenda-dot" style="background:#fb923c;"></div>
+                        <div style="font-size:0.85rem; font-weight:700;">System Update Push</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 40px; display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn btn-outline" onclick="openModal('change-pass-modal')" style="border: 1px solid var(--border); color: var(--text-main);">Change Password</button>
+                <button class="btn btn-black" onclick="signOut()" style="background:#fee2e2; color:#b91c1c;">Sign Out</button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div id="change-pass-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Update Password</h3>
+            <button style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;" onclick="closeModal('change-pass-modal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="label">New Password</label>
+                <input type="password" id="new-password" class="input" placeholder="Min 8 characters" onkeyup="checkStrengths(this.value, 'pass-strength-bar')">
+                <div id="pass-strength-bar" style="height:4px; width:0; background:var(--p-orange-text); margin-top:8px; border-radius:2px; transition: 0.3s;"></div>
+            </div>
+            <div class="form-group">
+                <label class="label">Confirm New Password</label>
+                <input type="password" id="confirm-password" class="input" placeholder="Re-type new password">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" style="flex:1;" onclick="closeModal('change-pass-modal')">Cancel</button>
+            <button class="btn btn-black" style="flex:1;" onclick="confirmChangePassword()">Update Password</button>
+        </div>
+    </div>
+</div>
+
+    <!-- ─── TOAST NOTIFICATION ─── -->
+    <style>
+        .toast {
+            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--primary); color: white; padding: 16px 32px; border-radius: 16px;
+            font-weight: 700; box-shadow: 0 20px 40px rgba(0,0,0,0.2); transition: var(--transition);
+            z-index: 10000; display: flex; align-items: center; gap: 12px;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+    <div id="toast" class="toast">Action completed successfully</div>
+
+    <!-- ─── MODALS ─── -->
+    <style>
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px;
+        }
+        .modal-card {
+            background: var(--surface); width: 100%; max-width: 500px;
+            border-radius: 24px; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.25);
+            overflow: hidden; animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalPop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-header { padding: 32px 32px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .modal-header h3 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
+        .modal-body { padding: 32px; }
+        .modal-footer { padding: 24px 32px 32px; display: flex; gap: 16px; background: #f8fafc; }
+    </style>
+
+    <!-- Programme Modal -->
+    <div id="prog-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="prog-modal-title">Add Programme</h3>
+                <button style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;" onclick="closeModal('prog-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="prog-id">
+                <div class="form-group">
+                    <label class="label">Programme Name</label>
+                    <input type="text" id="prog-name" class="input" placeholder="e.g. General Nursing">
+                </div>
+                <div class="form-group">
+                    <label class="label">Code (3 Letters)</label>
+                    <input type="text" id="prog-code" class="input" placeholder="e.g. RGN" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group">
+                    <label class="label">Status</label>
+                    <select id="prog-status" class="input">
+                        <option value="live">Live</option>
+                        <option value="coming_soon">Coming Soon</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" style="flex:1;" onclick="closeModal('prog-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="saveProgramme()">Save Programme</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Modal -->
+    <div id="course-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="course-modal-title">Add Course</h3>
+                <button style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="closeModal('course-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="course-id">
+                <div class="form-group">
+                    <label class="label">Programme</label>
+                    <select id="course-prog" class="input"></select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="label">Year</label>
+                        <select id="course-year" class="input">
+                            <option value="1">Year 1</option>
+                            <option value="2">Year 2</option>
+                            <option value="3">Year 3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="label">Semester</label>
+                        <select id="course-sem" class="input">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="label">Course Name</label>
+                    <input type="text" id="course-name" class="input" placeholder="e.g. Basic Nursing">
+                </div>
+                <div class="form-group">
+                    <label class="label">Course Code</label>
+                    <input type="text" id="course-code" class="input" placeholder="e.g. BNS 111">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="label">Credits</label>
+                        <input type="number" id="course-credits" class="input" min="0" max="10" value="2">
+                    </div>
+                    <div class="form-group">
+                        <label class="label">Sort Order</label>
+                        <input type="number" id="course-sort" class="input" value="0">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
+                        <input type="checkbox" id="course-non-graded" onchange="toggleNonGraded(this)"> Non-Graded
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
+                        <input type="checkbox" id="course-active" checked> Active
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" style="flex:1;" onclick="closeModal('course-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="saveCourse()">Save Course</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Modal -->
+    <div id="grade-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="grade-modal-title">Add/Edit Grade</h3>
+                <button style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="closeModal('grade-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="grade-id">
+                <div class="form-group">
+                    <label class="label">Grade Label</label>
+                    <input type="text" id="grade-label" class="input" placeholder="e.g. A">
+                </div>
+                <div class="form-group">
+                    <label class="label">Points (0.00 - 4.00)</label>
+                    <input type="number" id="grade-points" class="input" step="0.01" min="0" max="4">
+                </div>
+                <div class="form-group">
+                    <label class="label">Remark</label>
+                    <input type="text" id="grade-remark" class="input" placeholder="e.g. Excellent">
+                </div>
+                <div class="form-group">
+                    <label class="label">Sort Order</label>
+                    <input type="number" id="grade-sort" class="input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" style="flex:1;" onclick="closeModal('grade-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="saveGrade()">Save Grade</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classification Modal -->
+    <div id="class-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="class-modal-title">Edit Classification</h3>
+                <button style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="closeModal('class-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="class-id">
+                <div class="form-group">
+                    <label class="label">Label</label>
+                    <input type="text" id="class-label" class="input">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="label">Min GPA</label>
+                        <input type="number" id="class-min" class="input" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="label">Max GPA</label>
+                        <input type="number" id="class-max" class="input" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="label">Badge Color</label>
+                    <input type="color" id="class-color" class="input" style="height:50px; padding:4px;">
+                </div>
+                <div class="form-group">
+                    <label class="label">Consequence Text</label>
+                    <textarea id="class-consequence" class="input" style="height:60px;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" style="flex:1;" onclick="closeModal('class-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="saveClassification()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal (Two-Step Flow) -->
+    <div id="admin-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Add New Admin</h3>
+                <button style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;" onclick="closeModal('admin-modal')">✕</button>
+            </div>
+            <div class="modal-body" id="admin-modal-step-1">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div class="form-group">
+                        <label class="label">Full Name</label>
+                        <input type="text" id="new-admin-name" class="input" placeholder="e.g. Ama Serwaa">
+                    </div>
+                    <div class="form-group">
+                        <label class="label">Role</label>
+                        <select id="new-admin-role" class="input">
+                            <option value="editor">Editor</option>
+                            <option value="superadmin">Superadmin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="label">Position</label>
+                    <input type="text" id="new-admin-pos" class="input" placeholder="e.g. SRC Secretary">
+                </div>
+                
+                <div style="margin: 24px 0; border-top: 1px solid var(--border); padding-top: 24px;">
+                    <p style="font-weight:700; font-size:0.9rem; margin-bottom:16px; color:var(--text-muted);">How would you like to add them?</p>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                        <!-- OPTION A -->
+                        <div class="card" id="opt-card-a" style="padding:20px; border: 1px solid var(--border); cursor:pointer; transition:0.2s;" onclick="toggleAddOption('A')">
+                            <h4 style="font-size:0.85rem; margin-bottom:8px;">OPTION A</h4>
+                            <p style="font-size:0.75rem; color:var(--text-muted);">They already have a Supabase account.</p>
+                        </div>
+                        <!-- OPTION B -->
+                        <div class="card" id="opt-card-b" style="padding:20px; border: 1px solid var(--border); cursor:pointer; transition:0.2s;" onclick="toggleAddOption('B')">
+                            <h4 style="font-size:0.85rem; margin-bottom:8px;">OPTION B</h4>
+                            <p style="font-size:0.75rem; color:var(--text-muted);">Create a new account for them now.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="option-a-fields" style="display:none; margin-top:20px;">
+                    <div class="form-group">
+                        <label class="label">Existing Account Email</label>
+                        <input type="email" id="option-a-email" class="input" placeholder="Existing email">
+                    </div>
+                    <button class="btn btn-black" onclick="addAdminByEmail()">Add by Email</button>
+                </div>
+
+                <div id="option-b-fields" style="display:none; margin-top:20px;">
+                    <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div>
+                            <label class="label">Email Address</label>
+                            <input type="email" id="option-b-email" class="input" placeholder="New login email">
+                        </div>
+                        <div>
+                            <label class="label">Temporary Password</label>
+                            <input type="password" id="option-b-pass" class="input" placeholder="Min 8 chars" onkeyup="checkStrengths(this.value, 'signup-strength')">
+                            <div id="signup-strength" style="height:4px; width:0; background:var(--p-orange-text); margin-top:8px; border-radius:2px;"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-black" onclick="createAdminAccount()">Create & Add</button>
+                </div>
+            </div>
+
+            <!-- SUCCESS PANEL (STEP 2) -->
+            <div class="modal-body" id="admin-modal-success" style="display:none; text-align:center;">
+                <div style="font-size:3rem; margin-bottom:16px;">✅</div>
+                <h3 style="margin-bottom:8px;">Account Created!</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:24px;">Admin account for <span id="succ-name" style="font-weight:700; color:var(--primary);"></span> has been set up.</p>
+                
+                <div class="card" style="background:var(--bg); border:none; text-align:left; padding:20px; margin-bottom:24px;">
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">SHARE THESE CREDENTIALS</p>
+                    <p style="font-weight:700; font-size:0.9rem;">Email: <span id="succ-email"></span></p>
+                    <p style="font-weight:700; font-size:0.9rem;">Temp Password: <span id="succ-pass" style="font-family:monospace;"></span></p>
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <button class="btn btn-outline" style="flex:1;" onclick="copyCreds()">Copy to Clipboard</button>
+                    <button class="btn btn-black" style="flex:1; background:#25D366; color:white; border:none;" onclick="shareWA()">WhatsApp Share</button>
+                </div>
+                <button class="btn btn-outline" style="margin-top:16px; border:none;" onclick="closeModal('admin-modal'); loadAdmins();">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── SUPABASE INITIALIZATION ───
+        const { createClient } = supabase;
+        const db = createClient(
+            'https://jklpeyertjndhqvndnct.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprbHBleWVydGpuZGhxdm5kbmN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzM4MzEsImV4cCI6MjA4ODIwOTgzMX0.JbCzLTbeQpRwBJCYEOWqN5eZwktUrlyvNg7USZQR_dM'
+        );
+
+        async function checkAdminUser(userId) {
+            const { data: admin, error } = await db
+                .from('admin_users')
+                .select('*')
+                .eq('id', userId)
+                .single();
+                
+            if (!admin || !admin.is_active) {
+                await db.auth.signOut();
+                window.location.href = 'gradely-login.html';
+                return;
+            }
+            
+            window.ADMIN = admin;
+            showDashboard();
+        }
+
+        async function initAuth() {
+            const { data: { session } } = await db.auth.getSession();
+            if (session) {
+                await checkAdminUser(session.user.id);
+            } else {
+                window.location.href = 'gradely-login.html';
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboard').style.display = 'flex';
+            document.getElementById('admin-display-name').textContent = window.ADMIN.name;
+            document.getElementById('admin-display-role').textContent = window.ADMIN.role;
+            
+            if (window.ADMIN.role === 'superadmin') {
+                document.getElementById('nav-admins').style.display = 'flex';
+            }
+            
+            loadAdminData();
+        }
+
+        async function signOut() {
+            await db.auth.signOut();
+            window.location.href = 'gradely-login.html';
+        }
+
+        // ─── UI CONTROLS ───
+        function switchPage(pageId, el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${pageId}`).classList.add('active');
+            
+            const titleEl = document.getElementById('current-page-title');
+            if (titleEl) titleEl.textContent = el.textContent.trim();
+            
+            // Dynamic welcome message
+            const welcomeH = document.querySelector('.welcome-h');
+            if (welcomeH) {
+                if (pageId === 'overview') {
+                    welcomeH.innerHTML = `Welcome back, <span id="admin-first-name">${window.ADMIN ? window.ADMIN.name.split(' ')[0] : 'Admin'}</span>`;
+                } else {
+                    welcomeH.textContent = el.textContent.trim();
+                }
+            }
+
+            // Show right panel only on overview dashboard
+            const rightPanel = document.querySelector('.right-panel');
+            if (rightPanel) {
+                rightPanel.style.display = pageId === 'overview' ? '' : 'none';
+            }
+
+            window.CURRENT_PAGE = pageId;
+            renderCurrentPage();
+        }
+
+        function renderCurrentPage() {
+            const pageId = window.CURRENT_PAGE || 'overview';
+            switch(pageId) {
+                case 'overview': renderOverviewPage(); break;
+                case 'programmes': renderProgrammesPage(); break;
+                case 'courses': renderCoursesPage(); break;
+                case 'grades': renderGradeScalePage(); break;
+                case 'classifications': renderClassificationsPage(); break;
+                case 'settings': renderSettingsPage(); break;
+                case 'admins': renderAdminUsersPage(); break;
+            }
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function toggleMenu() { document.body.classList.toggle('menu-open'); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+
+        // ─── DATA ENGINE ───
+        async function loadAdminData() {
+            const diag = (id, val) => { 
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+            
+            try {
+                setLoading(true);
+                const banner = document.getElementById('db-error-banner');
+                if (banner) banner.style.display = 'none';
+
+                // 1. Auth Check
+                diag('diag-uid', 'Fetching session...');
+                const { data: { session } } = await db.auth.getSession();
+                const uid = session?.user?.id || 'NO SESSION';
+                diag('diag-uid', uid);
+                diag('diag-role', session?.user?.role || 'NONE');
+
+                // 2. Sequential Fetch with progress updates
+                diag('diag-count-progs', 'Loading...');
+                const { data: progs, error: e1 } = await db.from('programmes').select('*').order('name');
+                if (e1) throw e1;
+                diag('diag-count-progs', progs.length);
+
+                diag('diag-count-years', 'Loading...');
+                const { data: years, error: e2 } = await db.from('years').select('*').order('year_number');
+                if (e2) throw e2;
+                diag('diag-count-years', years.length);
+
+                diag('diag-count-courses', 'Loading...');
+                const { data: courses, error: e3 } = await db.from('courses').select('*').order('sort_order');
+                if (e3) throw e3;
+                diag('diag-count-courses', courses.length);
+
+                diag('diag-admin-entry', 'Loading...');
+                const { data: admins, error: e4 } = await db.from('admin_users').select('*').order('name');
+                if (e4) throw e4;
+                diag('diag-admin-entry', admins.some(a => a.id === uid) ? 'YES' : 'NO');
+
+                const { data: grades } = await db.from('grade_scale').select('*').order('sort_order');
+                const { data: classes } = await db.from('classifications').select('*').order('min_gpa', { descending: false });
+                const { data: settings } = await db.from('app_settings').select('*').order('key');
+
+                window.ADMIN_DATA = {
+                    programmes: progs || [],
+                    years: years || [],
+                    courses: courses || [],
+                    gradeScale: grades || [],
+                    classifications: classes || [],
+                    settings: Object.fromEntries((settings || []).map(s => [s.key, s.value])),
+                    settingsRaw: settings || [],
+                    admins: admins || []
+                };
+
+                // Update select options
+                const progOptions = (progs || []).map(p => `<option value="${p.id}">${p.name} (${p.code})</option>`).join('');
+                const filtProg = document.getElementById('filter-prog');
+                const classProg = document.getElementById('class-filter-prog');
+                const courseProg = document.getElementById('course-prog');
+                
+                if (filtProg) filtProg.innerHTML = `<option value="all">All Programmes</option>` + progOptions;
+                if (classProg) classProg.innerHTML = progOptions;
+                if (courseProg) courseProg.innerHTML = progOptions;
+
+                renderCurrentPage();
+            } catch (err) {
+                console.error("Diagnostic Data Load Error:", err);
+                const banner = document.getElementById('db-error-banner');
+                if (banner) {
+                    banner.style.display = 'block';
+                    document.getElementById('db-error-msg').textContent = "CRITICAL ERROR: " + err.message;
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function refreshData() {
+            await loadAdminData();
+        }
+
+        // Module: Overview
+        function renderOverviewPage() {
+            const data = window.ADMIN_DATA;
+            if (!data) return;
+
+            document.getElementById('stat-progs').textContent = data.programmes.length;
+            document.getElementById('stat-courses').textContent = data.courses.length;
+            document.getElementById('stat-live').textContent = data.programmes.filter(p => p.status === 'live').length;
+            document.getElementById('stat-soon').textContent = data.programmes.filter(p => p.status === 'coming_soon').length;
+            
+            const recent = [...data.programmes].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+            const table = document.getElementById('overview-prog-table');
+            if (table) {
+                table.innerHTML = recent.map(p => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.9rem;">${p.name}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">${p.code}</div>
+                        </div>
+                        <span class="badge badge-${p.status === 'live' ? 'active' : 'inactive'}">
+                            ${p.status === 'live' ? 'Live' : 'Coming Soon'}
+                        </span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Module: Programmes
+        function renderProgrammesPage() {
+            const programmes = window.ADMIN_DATA.programmes;
+            const table = document.getElementById('programmes-table-body');
+            if (!table) return;
+            
+            if (programmes.length === 0) {
+                table.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">No programmes found. Click "+ Add Programme" to start.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = programmes.map(p => `
+                <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td><code>${p.code}</code></td>
+                    <td><span class="badge badge-${p.status === 'live' ? 'active' : 'inactive'}">${p.status === 'live' ? 'Live' : 'Coming Soon'}</span></td>
+                    <td class="actions-cell">
+                        <button class="btn-icon" onclick="openAddProg('${p.id}')">✏️</button>
+                        <button class="btn-icon" onclick="toggleProgrammeStatus('${p.id}', '${p.status}')">
+                            ${p.status === 'live' ? '⏸' : '▶️'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function toggleProgrammeStatus(id, current) {
+            const next = current === 'live' ? 'coming_soon' : 'live';
+            setLoading(true);
+            await db.from('programmes').update({ status: next }).eq('id', id);
+            await refreshData();
+        }
+
+        async function openAddProg(id = null) {
+            if (id) {
+                const p = window.ADMIN_DATA.programmes.find(item => item.id === id);
+                document.getElementById('prog-id').value = p.id;
+                document.getElementById('prog-name').value = p.name;
+                document.getElementById('prog-code').value = p.code;
+                document.getElementById('prog-status').value = p.status;
+                document.getElementById('prog-modal-title').textContent = 'Edit Programme';
+            } else {
+                document.getElementById('prog-id').value = '';
+                document.getElementById('prog-name').value = '';
+                document.getElementById('prog-code').value = '';
+                document.getElementById('prog-modal-title').textContent = 'Add Programme';
+            }
+            openModal('prog-modal');
+        }
+
+        async function saveProgramme() {
+            const id = document.getElementById('prog-id').value;
+            const data = {
+                name: document.getElementById('prog-name').value,
+                code: document.getElementById('prog-code').value.toUpperCase(),
+                status: document.getElementById('prog-status').value
+            };
+            if (!data.name || !data.code) return alert("Fill all fields.");
+            setLoading(true);
+            if (id) await db.from('programmes').update(data).eq('id', id);
+            else {
+                const { data: newProg, error } = await db.from('programmes').insert(data).select().single();
+                if (!error) {
+                    await db.from('years').insert([
+                        { programme_id: newProg.id, year_number: 1 },
+                        { programme_id: newProg.id, year_number: 2 },
+                        { programme_id: newProg.id, year_number: 3 }
+                    ]);
+                }
+            }
+            closeModal('prog-modal');
+            await refreshData();
+            showToast("Programme saved ✓");
+        }
+
+        // Module: Courses
+        function renderCoursesPage() {
+            const data = window.ADMIN_DATA;
+            if (!data) return;
+
+            const progId = document.getElementById('filter-prog').value;
+            const yearNum = document.getElementById('filter-year').value;
+            const semNum = document.getElementById('filter-sem').value;
+            const search = document.getElementById('course-search').value.toLowerCase();
+
+            let filtered = data.courses.filter(c => {
+                const year = data.years.find(y => y.id === c.year_id);
+                if (!year) return false;
+
+                const matchProg = progId === 'all' || year.programme_id === progId;
+                const matchYear = yearNum === 'all' || year.year_number === parseInt(yearNum);
+                const matchSem = semNum === 'all' || c.semester === parseInt(semNum);
+                const matchSearch = c.name.toLowerCase().includes(search) || c.code.toLowerCase().includes(search);
+
+                return matchProg && matchYear && matchSem && matchSearch;
+            });
+
+            const table = document.getElementById('courses-table-body');
+            if (filtered.length === 0) {
+                table.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">No courses found matching these filters.</td></tr>`;
+                return;
+            }
+
+            // Sort by Year -> Semester -> Sort Order
+            filtered.sort((a,b) => {
+                const ya = data.years.find(y => y.id === a.year_id);
+                const yb = data.years.find(y => y.id === b.year_id);
+                if (ya.year_number !== yb.year_number) return ya.year_number - yb.year_number;
+                if (a.semester !== b.semester) return a.semester - b.semester;
+                return (a.sort_order || 0) - (b.sort_order || 0);
+            });
+
+            table.innerHTML = filtered.map(c => {
+                const year = data.years.find(y => y.id === c.year_id);
+                
+                return `
+                <tr>
+                    <td style="text-align: center;"><input type="checkbox" class="course-select" value="${c.id}"></td>
+                    <td><code>${c.code}</code></td>
+                    <td><div style="font-weight:700;">${c.name}</div></td>
+                    <td>${c.credits}</td>
+                    <td>Y${year ? year.year_number : '?' }S${c.semester}</td>
+                    <td><span class="badge badge-${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Offline'}</span></td>
+                    <td class="actions-cell">
+                        <button class="btn-icon" onclick="openCourseModal('${c.id}')">✏️</button>
+                        <button class="btn-icon delete" onclick="deleteCourse('${c.id}', '${c.name}')">🗑️</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        async function openCourseModal(id = null) {
+            if (id) {
+                const c = window.ADMIN_DATA.courses.find(item => item.id === id);
+                const year = window.ADMIN_DATA.years.find(y => y.id === c.year_id);
+                
+                document.getElementById('course-id').value = c.id;
+                document.getElementById('course-prog').value = year ? year.programme_id : '';
+                document.getElementById('course-year').value = year ? year.year_number : '1';
+                document.getElementById('course-sem').value = c.semester;
+                document.getElementById('course-name').value = c.name;
+                document.getElementById('course-code').value = c.code;
+                document.getElementById('course-credits').value = c.credits;
+                document.getElementById('course-sort').value = c.sort_order || 0;
+                document.getElementById('course-non-graded').checked = c.is_non_graded;
+                document.getElementById('course-active').checked = c.is_active;
+                document.getElementById('course-modal-title').textContent = 'Edit Course';
+            } else {
+                document.getElementById('course-id').value = '';
+                document.getElementById('course-name').value = '';
+                document.getElementById('course-code').value = '';
+                document.getElementById('course-modal-title').textContent = 'Add Course';
+            }
+            openModal('course-modal');
+        }
+
+        function toggleNonGraded(el) {
+            if (el.checked) document.getElementById('course-credits').value = 0;
+        }
+
+        async function saveCourse() {
+            const id = document.getElementById('course-id').value;
+            const progId = document.getElementById('course-prog').value;
+            const yearNum = parseInt(document.getElementById('course-year').value);
+            
+            // Get correct year_id from cached ADMIN_DATA
+            const yearObj = window.ADMIN_DATA.years.find(y => y.programme_id === progId && y.year_number === yearNum);
+            
+            if (!yearObj) return alert("System error: Year mapping not found for this programme.");
+
+            const data = {
+                year_id: yearObj.id,
+                semester: parseInt(document.getElementById('course-sem').value),
+                name: document.getElementById('course-name').value,
+                code: document.getElementById('course-code').value,
+                credits: parseInt(document.getElementById('course-credits').value),
+                sort_order: parseInt(document.getElementById('course-sort').value),
+                is_non_graded: document.getElementById('course-non-graded').checked,
+                is_active: document.getElementById('course-active').checked
+            };
+
+            if (!data.name || !data.code) return alert("Please fill name and code.");
+
+            setLoading(true);
+            if (id) {
+                await db.from('courses').update(data).eq('id', id);
+                showToast("Course updated ✓");
+            } else {
+                await db.from('courses').insert(data);
+                showToast("Course added ✓");
+            }
+            closeModal('course-modal');
+            await refreshData();
+        }
+
+        async function deleteCourse(id, name) {
+            if (confirm(`Delete ${name}?\nStudents who already saved grades for this course will not be affected.`)) {
+                setLoading(true);
+                await db.from('courses').delete().eq('id', id);
+                showToast("Course deleted");
+                await refreshData();
+            }
+        }
+
+        function handleCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const progId = document.getElementById('filter-prog').value;
+            if (progId === 'all') return alert("Select a Programme first to import to.");
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                const rows = text.split('\n').slice(1); // Skip header
+                const courses = [];
+
+                for (let row of rows) {
+                    const cols = row.split(',');
+                    if (cols.length < 4) continue;
+                    
+                    // Simple parsing: name, code, credits, semester, non_graded (optional)
+                    courses.push({
+                        name: cols[0].trim(),
+                        code: cols[1].trim(),
+                        credits: parseInt(cols[2].trim()),
+                        semester: parseInt(cols[3].trim()),
+                        is_non_graded: cols[4] ? cols[4].trim().toLowerCase() === 'true' : false
+                    });
+                }
+                
+                if (confirm(`Import ${courses.length} courses?`)) {
+                    // Logic to find year_id and insert would go here
+                    alert("Import processing logic required mapping years. Please use manual add for now or refine CSV.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Module: Grade Scale
+        function renderGradeScalePage() {
+            const grades = window.ADMIN_DATA.gradeScale;
+            const table = document.getElementById('grade-table-body');
+            if (!table) return;
+
+            if (grades.length === 0) {
+                table.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">No grades found in the scale.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = grades.map(g => `
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td><strong>${g.grade}</strong></td>
+                    <td>${g.points.toFixed(2)}</td>
+                    <td>${g.description || '-'}</td>
+                    <td class="actions-cell">
+                        <button class="btn-icon" onclick="openGradeModal('${g.id}')">✏️</button>
+                        <button class="btn-icon delete" onclick="deleteGrade('${g.id}', '${g.grade}')">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        // Module: Settings
+        function renderSettingsPage() {
+            const settings = window.ADMIN_DATA.settings;
+            // Update inputs if they exist
+            const inputs = {
+                'app_name': 'set-app-name',
+                'contact_email': 'set-email',
+                'maintenance_mode': 'set-maintenance'
+            };
+            for (const [key, id] of Object.entries(inputs)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = settings[key] === 'true';
+                    else el.value = settings[key] || '';
+                }
+            }
+        }
+
+        async function saveSettings() {
+            setLoading(true);
+            const settings = [
+                { key: 'app_name', value: document.getElementById('set-app-name').value },
+                { key: 'contact_email', value: document.getElementById('set-email').value },
+                { key: 'maintenance_mode', value: document.getElementById('set-maintenance').checked.toString() }
+            ];
+
+            for (const s of settings) {
+                await db.from('app_settings').upsert(s);
+            }
+            showToast("Settings saved ✓");
+            await refreshData();
+        }
+
+        async function resetGradesToDefault() {
+            if (confirm("Reset to official scale (A=4.00 to F=0.00)?")) {
+                const defaults = [
+                    {grade: 'A', points: 4.00, description: 'Excellent', sort_order: 1},
+                    {grade: 'A-', points: 3.75, description: 'Very Good', sort_order: 2},
+                    {grade: 'B+', points: 3.50, description: 'Good Plus', sort_order: 3},
+                    {grade: 'B', points: 3.00, description: 'Good', sort_order: 4},
+                    {grade: 'B-', points: 2.50, description: 'Above Average', sort_order: 5},
+                    {grade: 'C+', points: 2.00, description: 'Average Plus', sort_order: 6},
+                    {grade: 'C', points: 1.50, description: 'Average', sort_order: 7},
+                    {grade: 'D', points: 1.00, description: 'Below Average', sort_order: 8},
+                    {grade: 'F', points: 0.00, description: 'Fail', sort_order: 9}
+                ];
+                setLoading(true);
+                await db.from('grade_scale').delete().neq('id', '00000000-0000-1111-2222-333333333333');
+                await db.from('grade_scale').insert(defaults);
+                showToast("Grade scale reset ✓");
+                await refreshData();
+            }
+        }
+
+        // Module: Classifications
+        function renderClassificationsPage() {
+            const data = window.ADMIN_DATA;
+            const progId = document.getElementById('class-filter-prog').value;
+            
+            const filtered = data.classifications.filter(c => c.programme_id === progId);
+            const table = document.getElementById('classifications-table-body');
+            if (!table) return;
+
+            if (filtered.length === 0) {
+                table.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted);">No classifications found for this programme.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = filtered.map(c => `
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td>
+                        <strong>${c.label}</strong>
+                    </td>
+                    <td>${c.min_gpa.toFixed(2)} - ${c.max_gpa.toFixed(2)}</td>
+                    <td>
+                        <span class="badge" style="background:${c.color}; color:#fff;">${c.label}</span>
+                    </td>
+                    <td>${c.consequence || '-'}</td>
+                    <td class="actions-cell">
+                        <button class="btn-icon" onclick="openClassEdit('${c.id}')">✏️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function openClassEdit(id) {
+            const c = window.ADMIN_DATA.classifications.find(i => i.id === id);
+            document.getElementById('class-id').value = c.id;
+            document.getElementById('class-label').value = c.label;
+            document.getElementById('class-min').value = c.min_gpa;
+            document.getElementById('class-max').value = c.max_gpa;
+            document.getElementById('class-color').value = c.color;
+            document.getElementById('class-consequence').value = c.consequence || '';
+            openModal('class-modal');
+        }
+
+        async function updateSetting(id, key) {
+            const val = document.getElementById(`setting-${id}`).value;
+            setLoading(true);
+            await db.from('app_settings').update({ value: val }).eq('id', id);
+            showToast(`${key} updated ✓`);
+            await refreshData();
+        }
+
+        async function openGradeEdit(id = null) {
+            if (id) {
+                const { data: g } = await db.from('grade_scale').select('*').eq('id', id).single();
+                document.getElementById('grade-id').value = g.id;
+                document.getElementById('grade-name').value = g.grade;
+                document.getElementById('grade-points').value = g.points;
+                document.getElementById('grade-desc').value = g.description;
+                document.getElementById('grade-sort').value = g.sort_order;
+                document.getElementById('grade-modal-title').textContent = 'Edit Grade';
+            } else {
+                document.getElementById('grade-id').value = '';
+                document.getElementById('grade-name').value = '';
+                document.getElementById('grade-points').value = '';
+                document.getElementById('grade-desc').value = '';
+                document.getElementById('grade-sort').value = '';
+                document.getElementById('grade-modal-title').textContent = 'Add Grade';
+            }
+            openModal('grade-modal');
+        }
+
+        async function saveGrade() {
+            const id = document.getElementById('grade-id').value;
+            const data = {
+                grade: document.getElementById('grade-name').value,
+                points: parseFloat(document.getElementById('grade-points').value),
+                description: document.getElementById('grade-desc').value,
+                sort_order: parseInt(document.getElementById('grade-sort').value)
+            };
+            setLoading(true);
+            if (id) await db.from('grade_scale').update(data).eq('id', id);
+            else await db.from('grade_scale').insert(data);
+            showToast("Grade updated ✓");
+            closeModal('grade-modal');
+            await refreshData();
+        }
+
+        async function deleteGrade(id, name) {
+            if (confirm(`Remove grade ${name}? This affects student calculations.`)) {
+                setLoading(true);
+                await db.from('grade_scale').delete().eq('id', id);
+                await refreshData();
+            }
+        }
+
+        async function openClassEdit(id) {
+            const { data: c } = await db.from('classifications').select('*').eq('id', id).single();
+            document.getElementById('class-id').value = c.id;
+            document.getElementById('class-label').value = c.label;
+            document.getElementById('class-min').value = c.min_gpa;
+            document.getElementById('class-max').value = c.max_gpa;
+            document.getElementById('class-color').value = c.color;
+            document.getElementById('class-consequence').value = c.consequence || '';
+            openModal('class-modal');
+        }
+
+        async function saveClassification() {
+            const id = document.getElementById('class-id').value;
+            const data = {
+                label: document.getElementById('class-label').value,
+                min_gpa: parseFloat(document.getElementById('class-min').value),
+                max_gpa: parseFloat(document.getElementById('class-max').value),
+                color: document.getElementById('class-color').value,
+                consequence: document.getElementById('class-consequence').value
+            };
+            setLoading(true);
+            await db.from('classifications').update(data).eq('id', id);
+            showToast("Classification tier updated ✓");
+            closeModal('class-modal');
+            await refreshData();
+        }
+
+        // Module: Admin Users
+        function renderAdminUsersPage() {
+            if (window.ADMIN.role !== 'superadmin') return;
+            const admins = window.ADMIN_DATA.admins;
+            const table = document.getElementById('admins-table-body');
+            
+            table.innerHTML = admins.map(a => {
+                return `
+                <tr>
+                    <td>
+                        <strong>${a.name}</strong> ${a.id === window.ADMIN.id ? '<span class="badge" style="background:var(--p-blue-bg); color:var(--p-blue-text);">You</span>' : ''}
+                    </td>
+                    <td>${a.role.toUpperCase()}</td>
+                    <td>${a.position || '—'}</td>
+                    <td>
+                        <span class="badge" style="background:${a.is_active ? 'var(--p-green-bg)' : '#fee2e2'}; color:${a.is_active ? 'var(--p-green-text)' : '#b91c1c'};">
+                            ${a.is_active ? 'Active' : 'Suspended'}
+                        </span>
+                    </td>
+                    <td class="actions-cell">
+                        <button class="btn-icon" title="Reset Password" onclick="resetAdminPassword('${a.name}', '${a.id}')">
+                            <svg class="icon"><use href="#icon-settings"/></svg>
+                        </button>
+                        ${a.id !== window.ADMIN.id ? `
+                            <button class="btn-icon" onclick="toggleAdminStatus('${a.id}', ${a.is_active})">
+                                <svg class="icon" style="color:${a.is_active ? '#ef4444' : '#22c55e'};">
+                                    <use href="#icon-${a.is_active ? 'layers' : 'layers'}"/>
+                                </svg>
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        async function resetAdminPassword(name, id) {
+             const { data: user } = await db.from('admin_users').select('name').eq('id', id).single();
+             // Since we don't have email in admin_users, we fetch from auth
+             const { data: { users } } = await db.auth.admin.listUsers();
+             const target = users.find(u => u.id === id);
+             if (!target) return alert("System could not find Auth record for this admin.");
+
+             if (confirm(`Send password reset email to ${name} (${target.email})?`)) {
+                 await db.auth.resetPasswordForEmail(target.email, {
+                     redirectTo: window.location.origin + window.location.pathname
+                 });
+                 showToast(`Reset email sent to ${target.email} ✓`);
+             }
+        }
+
+        // --- NEW ADMIN WORKFLOW ---
+        function toggleAddOption(opt) {
+            document.getElementById('opt-card-a').style.borderColor = opt === 'A' ? 'var(--primary)' : 'var(--border)';
+            document.getElementById('opt-card-b').style.borderColor = opt === 'B' ? 'var(--primary)' : 'var(--border)';
+            document.getElementById('option-a-fields').style.display = opt === 'A' ? 'block' : 'none';
+            document.getElementById('option-b-fields').style.display = opt === 'B' ? 'block' : 'none';
+        }
+
+        async function addAdminByEmail() {
+            const email = document.getElementById('option-a-email').value;
+            const name = document.getElementById('new-admin-name').value;
+            const role = document.getElementById('new-admin-role').value;
+            const pos = document.getElementById('new-admin-pos').value;
+
+            if (!email || !name) return alert("Please fill Name and Email.");
+
+            setLoading(true);
+            try {
+                // Find user in Auth (requires admin perms usually, or we can just try to insert and catch FK error)
+                const { data: { users } } = await db.auth.admin.listUsers();
+                const user = users.find(u => u.email === email);
+                
+                if (!user) throw new Error("No user found with this email. Ask them to sign up via Option B.");
+
+                const { error } = await db.from('admin_users').insert({
+                    id: user.id, name, role, position: pos, is_active: true
+                });
+                if (error) throw error;
+
+                showToast(`Admin ${name} added successfully ✓`);
+                closeModal('admin-modal');
+                loadAdmins();
+            } catch (err) {
+                alert(err.message);
+            }
+            setLoading(false);
+        }
+
+        async function createAdminAccount() {
+            const email = document.getElementById('option-b-email').value;
+            const pass = document.getElementById('option-b-pass').value;
+            const name = document.getElementById('new-admin-name').value;
+            const role = document.getElementById('new-admin-role').value;
+            const pos = document.getElementById('new-admin-pos').value;
+
+            if (!email || pass.length < 8) return alert("Email required and password must be 8+ chars.");
+            if (!name) return alert("Full Name is required.");
+
+            setLoading(true);
+            try {
+                const { data, error } = await db.auth.signUp({
+                    email, password: pass,
+                    options: { data: { full_name: name, role: role } }
+                });
+                if (error) throw error;
+                if (!data.user) throw new Error("Signup failed. Check email format.");
+
+                await db.from('admin_users').insert({
+                    id: data.user.id, name, role, position: pos, is_active: true
+                });
+
+                // Show Success Panel
+                document.getElementById('admin-modal-step-1').style.display = 'none';
+                document.getElementById('admin-modal-success').style.display = 'block';
+                document.getElementById('succ-name').textContent = name;
+                document.getElementById('succ-email').textContent = email;
+                document.getElementById('succ-pass').textContent = pass;
+
+                showToast("Account created successfully ✓");
+            } catch (err) {
+                alert(err.message);
+            }
+            setLoading(false);
+        }
+
+        function copyCreds() {
+            const email = document.getElementById('succ-email').textContent;
+            const pass = document.getElementById('succ-pass').textContent;
+            navigator.clipboard.writeText(`Email: ${email}\nPassword: ${pass}`);
+            showToast("Copied to clipboard ✓");
+        }
+
+        function shareWA() {
+            const name = document.getElementById('succ-name').textContent;
+            const email = document.getElementById('succ-email').textContent;
+            const pass = document.getElementById('succ-pass').textContent;
+            const url = window.location.origin + window.location.pathname;
+            const msg = encodeURIComponent(`Hi ${name}, your Gradely Admin access has been set up.\n\nEmail: ${email}\nTemp Password: ${pass}\nLogin at: ${url}\n\nPlease change your password after first login.`);
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
+        }
+
+        // --- PASSWORD MANAGEMENT ---
+        function checkStrengths(pass, barId) {
+            const bar = document.getElementById(barId);
+            let score = 0;
+            if (pass.length >= 8) score += 40;
+            if (/[0-9]/.test(pass)) score += 30;
+            if (/[A-Z]/.test(pass)) score += 30;
+            bar.style.width = score + '%';
+            bar.style.background = score < 70 ? 'var(--p-orange-text)' : 'var(--p-green-text)';
+        }
+
+        async function confirmChangePassword() {
+            const newPass = document.getElementById('new-password').value;
+            const confPass = document.getElementById('confirm-password').value;
+
+            if (newPass.length < 8 || !/[0-9]/.test(newPass)) {
+                return alert("Password must be 8+ characters and contain a number.");
+            }
+            if (newPass !== confPass) return alert("Passwords do not match.");
+
+            setLoading(true);
+            const { error } = await db.auth.updateUser({ password: newPass });
+            setLoading(false);
+
+            if (error) {
+                alert("Failed to update password: " + error.message);
+            } else {
+                showToast("Password updated successfully ✓");
+                closeModal('change-pass-modal');
+                document.getElementById('new-password').value = '';
+                document.getElementById('confirm-password').value = '';
+            }
+        }
+
+        async function toggleAdminStatus(id, current) {
+            if (confirm(`Change this admin's access status?`)) {
+                setLoading(true);
+                await db.from('admin_users').update({ is_active: !current }).eq('id', id);
+                await refreshData();
+            }
+        }
+
+        function setLoading(show) {
+            const loader = document.getElementById('sync-loader');
+            if (loader) loader.style.display = show ? 'flex' : 'none';
+        }
+
+        // Initialize on load
+        window.onload = initAuth;
+
+        // ANIMATION HELPER
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes spin { to { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
+
+    </script>
+    <div id="sync-loader" style="display:none; position:fixed; top:24px; right:24px; background:white; padding:12px 24px; border-radius:100px; box-shadow:0 10px 30px rgba(0,0,0,0.1); z-index:9999; align-items:center; gap:12px; font-weight:600; font-size:0.85rem; border:1px solid var(--border);">
+        <div class="loader-spinner" style="width:20px; height:20px; border:3px solid #f3f3f3; border-top:3px solid var(--primary); border-radius:50%; animation: spin 1s linear infinite;"></div>
+        Syncing Database...
+    </div>
+
+    <style>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</body>
+</html>
